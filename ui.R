@@ -15,7 +15,8 @@ ui <- fluidPage(
       numericInput("interes", "Interés (%):", value = 6.25, min = 0),
       numericInput("inflacion", "Inflación (%):", value = 1.826, min = 0),
       numericInput("salario", "Primer sueldo al iniciar las cotizaciones:", value = 850, min = 0),
-      numericInput("edad_jubilacion", "Edad de jubilación (años):", value = 65, min = 65, max=100)
+      numericInput("edad_jubilacion", "Edad de jubilación (años):", value = 65, min = 65, max=100),
+      textOutput("minjub")
     ),
     
     mainPanel(

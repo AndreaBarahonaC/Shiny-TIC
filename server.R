@@ -1,6 +1,54 @@
 library(shiny)
 library(lifecontingencies)
 
+# COEFICIENTES
+
+Coeficiente <- data.frame(An.Imposiciones = c(5:40),
+                          Coef = c(0.4375, 0.4500, 0.4625,0.4750, 
+                                   0.4875, 0.5000, 0.5125, 0.5250,
+                                   0.5375, 0.5500, 0.5625, 0.5750, 
+                                   0.5875, 0.6000, 0.6125, 0.6250, 
+                                   0.6375, 0.6500, 0.6625, 0.6750,
+                                   0.6875, 0.7000, 0.7125, 0.7250,
+                                   0.7375, 0.7500, 0.7625, 0.7750,
+                                   0.7875, 0.8000, 0.8125, 0.8325,
+                                   0.8605, 0.8970, 0.9430, 1.0000))
+
+#FUNCIONES
+
+Pension <- function(edad, salario, anios_aporte, inflacion){
+  # Creamos un vector con los últimos 5 mejores salarios 
+  mejores_5_salarios <- sapply(1:5, function(i) {
+    salario * (1 + inflacion)^(anios_aporte - i)
+  })
+  
+  # pension = promedio * coef
+  prom <- sum(mejores_5_salarios) / 5
+  coef <- Coeficiente$Coef[Coeficiente$An.Imposiciones == anios_aporte]
+  
+  pension <- prom * coef 
+  return(pension)
+}
+
+TasaRetorno <- function(edad, salario, anios_aporte, inflacion){
+  
+  pension <- Pension(edad, salario, anios_aporte, inflacion)
+  ultimo_sueldo <- salario * (1+inflacion)^(anios_aporte - 1)
+  
+  tasa <- (pension / ultimo_sueldo) * 100
+  return(tasa)
+}
+
+
+# Añadir nuevas filas para cuando supera los 40 años de aportes
+for (i in 41:100) {
+  ultimo_coef <- tail(Coeficiente$Coef, 1)
+  nuevo_coef <- ultimo_coef + 0.0125
+  nueva_fila <- data.frame(An.Imposiciones = i, Coef = nuevo_coef)
+  Coeficiente <- rbind(Coeficiente, nueva_fila)
+}
+
+
 # Progresión Geometrica ------------------------
 VAn <- function(C, q, n, i, type = "immediate"){
   if(q != (1+i)){
@@ -18,6 +66,34 @@ VSn <- function(C, q, n, i, type = "immediate"){
 }
 
 
+minimo <- function(edad) {
+  if (edad + 40 < 60) {
+    return(edad + 40)
+  } else {
+    if (edad + 30 <= 64) {
+      if (edad + 30 <= 60) {
+        return(60)
+      } else {
+        return(edad + 30)
+      }
+    } else {
+      if (edad + 15 <= 69) {
+        if (edad + 15 <= 65) {
+          return(65)
+        } else {
+          return(edad + 15)
+        }
+      } else {
+        if (edad + 10 <= 70) {
+          return(70)
+        } else {
+          return(edad + 10)
+        }
+      }
+    }
+  }
+}
+
 
 #  Se usa por defecto la siguiente información obtenida del IESS
 # Aporte del afiliado (personal y patronal) al seguro= 11,06% de su salario
@@ -25,41 +101,25 @@ VSn <- function(C, q, n, i, type = "immediate"){
 
 server <- function(input, output, session) {
   
+  
+  
   # Verificar mínimo de edad de jubilación
   observeEvent(input$edad_inicio, {
     # Verificar si el valor de edad_inicio no es NULL ni NA
     if (!is.null(input$edad_inicio) && !is.na(input$edad_inicio)) {
-      minimo <- function(edad) {
-        if (edad + 40 < 60) {
-          return(edad + 40)
-        } else {
-          if (edad + 30 <= 64) {
-            if (edad + 30 <= 60) {
-              return(60)
-            } else {
-              return(edad + 30)
-            }
-          } else {
-            if (edad + 15 <= 69) {
-              if (edad + 15 <= 65) {
-                return(65)
-              } else {
-                return(edad + 15)
-              }
-            } else {
-              if (edad + 10 <= 70) {
-                return(70)
-              } else {
-                return(edad + 10)
-              }
-            }
-          }
-        }
-      }
       
       updateNumericInput(session, "edad_jubilacion", min = minimo(input$edad_inicio))
     }
   })
+  
+  edadmin <- reactive({
+    return(minimo(input$edad_inicio))
+  })
+  
+  output$minjub <- renderText({
+    paste("La edad mínima de jubilación es:",edadmin() , "años")
+  })
+  
   
  
   ###
