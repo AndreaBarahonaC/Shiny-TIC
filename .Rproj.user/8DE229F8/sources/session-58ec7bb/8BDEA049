@@ -1,0 +1,26 @@
+{
+    "id": "8BDEA049",
+    "path": "D:/OneDrive - Escuela Politécnica Nacional/9no Semestre/TICs/Shiny-TIC/server.R",
+    "project_path": "server.R",
+    "type": "r_source",
+    "hash": "3152817565",
+    "contents": "",
+    "dirty": false,
+    "created": 1719954748714.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "48,1",
+        "scrollLine": "44"
+    },
+    "folds": "51|24|246|0|\n",
+    "lastKnownWriteTime": 1719954929,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1719954929273,
+    "read_only": false,
+    "read_only_alternatives": []
+}

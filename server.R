@@ -1,6 +1,7 @@
 library(shiny)
 library(lifecontingencies)
 
+
 # COEFICIENTES
 
 Coeficiente <- data.frame(An.Imposiciones = c(5:40),
@@ -13,6 +14,14 @@ Coeficiente <- data.frame(An.Imposiciones = c(5:40),
                                    0.7375, 0.7500, 0.7625, 0.7750,
                                    0.7875, 0.8000, 0.8125, 0.8325,
                                    0.8605, 0.8970, 0.9430, 1.0000))
+
+for (i in 41:100) { # Añadir nuevas filas para cuando supera los 40 años de aportes
+  ultimo_coef <- tail(Coeficiente$Coef, 1)
+  nuevo_coef <- ultimo_coef + 0.0125
+  nueva_fila <- data.frame(An.Imposiciones = i, Coef = nuevo_coef)
+  Coeficiente <- rbind(Coeficiente, nueva_fila)
+}
+
 
 #FUNCIONES
 
@@ -37,15 +46,6 @@ TasaRetorno <- function(edad, salario, anios_aporte, inflacion){
   
   tasa <- (pension / ultimo_sueldo) * 100
   return(tasa)
-}
-
-
-# Añadir nuevas filas para cuando supera los 40 años de aportes
-for (i in 41:100) {
-  ultimo_coef <- tail(Coeficiente$Coef, 1)
-  nuevo_coef <- ultimo_coef + 0.0125
-  nueva_fila <- data.frame(An.Imposiciones = i, Coef = nuevo_coef)
-  Coeficiente <- rbind(Coeficiente, nueva_fila)
 }
 
 
