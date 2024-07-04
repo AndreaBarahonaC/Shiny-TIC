@@ -1,5 +1,13 @@
+# soy ammy
 library(shiny)
 library(lifecontingencies)
+library(openxlsx)
+library(readxl)
+library(tidyverse)
+library(data.table)
+library(shinythemes)
+library(shinydashboard)
+
 
 
 # COEFICIENTES
@@ -19,7 +27,7 @@ for (i in 41:100) { # Añadir nuevas filas para cuando supera los 40 años de ap
   ultimo_coef <- tail(Coeficiente$Coef, 1)
   nuevo_coef <- ultimo_coef + 0.0125
   nueva_fila <- data.frame(An.Imposiciones = i, Coef = nuevo_coef)
-  Coeficiente <- rbind(Coeficiente, nueva_fila)
+  Coeficiente <- rbind(Coeficiente, nueva_fila)
 }
 
 
@@ -176,7 +184,8 @@ server <- function(input, output, session) {
 # Tasa de crecimiento del SBU= 2.5339%
 # Tasa de crecimiento de pensiones= 1.8261%
   
-  load("C:/Users/MyHP/Desktop/TIC/Shiny-TIC/obtencion_pension_prom.Rdata")
+  load("obtencion_pension_prom.Rdata")
+  
   
   #Función de cálculo de la pensión promedio
   
