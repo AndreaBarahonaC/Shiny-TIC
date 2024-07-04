@@ -13,16 +13,9 @@ library(shinydashboard)
 # COEFICIENTES
 
 Coeficiente <- data.frame(An.Imposiciones = c(5:40),
-                          Coef = c(0.4375, 0.4500, 0.4625,0.4750, 
-                                   0.4875, 0.5000, 0.5125, 0.5250,
-                                   0.5375, 0.5500, 0.5625, 0.5750, 
-                                   0.5875, 0.6000, 0.6125, 0.6250, 
-                                   0.6375, 0.6500, 0.6625, 0.6750,
-                                   0.6875, 0.7000, 0.7125, 0.7250,
-                                   0.7375, 0.7500, 0.7625, 0.7750,
-                                   0.7875, 0.8000, 0.8125, 0.8325,
+                          Coef = c(0.4375, 0.4500, 0.4625,0.4750,0.4875, 0.5000, 0.5125, 0.5250, 0.5375, 0.5500, 0.5625, 0.5750, 0.5875, 0.6000, 0.6125, 0.6250, 
+                                   0.6375, 0.6500, 0.6625, 0.6750, 0.6875, 0.7000, 0.7125, 0.7250, 0.7375, 0.7500, 0.7625, 0.7750, 0.7875, 0.8000, 0.8125, 0.8325,
                                    0.8605, 0.8970, 0.9430, 1.0000))
-
 for (i in 41:100) { # Añadir nuevas filas para cuando supera los 40 años de aportes
   ultimo_coef <- tail(Coeficiente$Coef, 1)
   nuevo_coef <- ultimo_coef + 0.0125
@@ -31,12 +24,17 @@ for (i in 41:100) { # Añadir nuevas filas para cuando supera los 40 años de ap
 }
 
 
-#FUNCIONES
+# FUNCIONES 
 
-Pension <- function(edad, salario, anios_aporte, inflacion){
+Pension <- function(edad, salario, anios_aporte){
+  
+  
+  if(salario > 460){ incremento <- 0.021540}
+  else{ incremento <- 0.025339 }
+  
   # Creamos un vector con los últimos 5 mejores salarios 
   mejores_5_salarios <- sapply(1:5, function(i) {
-    salario * (1 + inflacion)^(anios_aporte - i)
+    salario * (1 + incremento)^(anios_aporte - i)
   })
   
   # pension = promedio * coef
@@ -47,17 +45,20 @@ Pension <- function(edad, salario, anios_aporte, inflacion){
   return(pension)
 }
 
-TasaRetorno <- function(edad, salario, anios_aporte, inflacion){
+TasaReemplazo <- function(edad, salario, anios_aporte){
   
-  pension <- Pension(edad, salario, anios_aporte, inflacion)
-  ultimo_sueldo <- salario * (1+inflacion)^(anios_aporte - 1)
+  if(salario > 460){incremento <- 0.021540}
+  else{incremento <- 0.025339 }
+  
+  pension <- Pension(edad, salario, anios_aporte)
+  ultimo_sueldo <- salario * (1+incremento)^(anios_aporte - 1)
   
   tasa <- (pension / ultimo_sueldo) * 100
   return(tasa)
 }
 
 
-# Progresión Geometrica ------------------------
+# Progresión Geometrica 
 VAn <- function(C, q, n, i, type = "immediate"){
   if(q != (1+i)){
     res <- C*(1-q^n*(1+i)^(-n))/(1+i-q)
@@ -73,7 +74,7 @@ VSn <- function(C, q, n, i, type = "immediate"){
   return(VAn(C, q, n, i, type)*(1+i)^(n))
 }
 
-
+# Condiciones Mínimas 
 minimo <- function(edad) {
   if (edad + 40 < 60) {
     return(edad + 40)
@@ -102,11 +103,12 @@ minimo <- function(edad) {
   }
 }
 
-
 #  Se usa por defecto la siguiente información obtenida del IESS
 # Aporte del afiliado (personal y patronal) al seguro= 11,06% de su salario
 # Tasa de crecimiento de salarios= 2.154%
 
+
+## SERVER ###
 server <- function(input, output, session) {
   
   
@@ -130,7 +132,7 @@ server <- function(input, output, session) {
   
   
  
-  ###
+  # Ahorro
   calcularAhorro <- reactive({
     edad_inicio <- input$edad_inicio
     salario0 <- input$salario
@@ -198,47 +200,55 @@ server <- function(input, output, session) {
     return(prom)
   }
   
-
-calcularVApensiones <- reactive({
-  sexo <- input$sexo
-  edad_inicio <- input$edad_inicio
-  edad_jubilacion <- input$edad_jubilacion
-  n_pensiones <- 100 - edad_jubilacion # 100 años de edad como límite
-  anios_aporte <- edad_jubilacion-edad_inicio
-  crec_pensiones <- 1.8261/100
-  inflacion <- input$inflacion / 100 
-  interes <- input$interes /100
-  
-  #Cálculo de la pensión promedio
-  
-  pension_promedio <- pension_promedio_fun(edad_jubilacion, anios_aporte*12, sexo)
-  
-  # Calculo del VA de la pension
-  i_12 <- (1+interes)^(1/12) - 1
-  
-  C <- (pension_promedio *(1+ crec_pensiones)^anios_aporte* (1+inflacion)^anios_aporte) * annuity(i = i_12, n=12, type = "due")
-  if(sexo == 'M'){
-    va_pension <- C * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-inflacion-crec_pensiones- crec_pensiones*inflacion)/((1+inflacion)*(1+crec_pensiones)), payment='due')
-  }else{
-    va_pension <- C * axn(TM, x= edad_jubilacion, n=n_pensiones, i= (interes-inflacion-crec_pensiones- crec_pensiones*inflacion)/((1+inflacion)*(1+crec_pensiones)), payment='due')
+  calcularVApensiones <- reactive({
+    sexo <- input$sexo
+    edad_inicio <- input$edad_inicio
+    edad_jubilacion <- input$edad_jubilacion
+    n_pensiones <- 100 - edad_jubilacion # 100 años de edad como límite
+    anios_aporte <- edad_jubilacion-edad_inicio
+    crec_pensiones <- 1.8261/100
+    inflacion <- input$inflacion / 100 
+    interes <- input$interes /100
     
-  }
+    #Cálculo de la pensión promedio
+    
+    pension_promedio <- pension_promedio_fun(edad_jubilacion, anios_aporte*12, sexo)
+    
+    # Calculo del VA de la pension
+    i_12 <- (1+interes)^(1/12) - 1
+    
+    C <- (pension_promedio *(1+ crec_pensiones)^anios_aporte* (1+inflacion)^anios_aporte) * annuity(i = i_12, n=12, type = "due")
+    if(sexo == 'M'){
+      va_pension <- C * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-inflacion-crec_pensiones- crec_pensiones*inflacion)/((1+inflacion)*(1+crec_pensiones)), payment='due')
+    }else{
+      va_pension <- C * axn(TM, x= edad_jubilacion, n=n_pensiones, i= (interes-inflacion-crec_pensiones- crec_pensiones*inflacion)/((1+inflacion)*(1+crec_pensiones)), payment='due')
+      
+    }
+    
+    return(va_pension)
+    
+  })
   
-  return(va_pension)
+  output$VApension <- renderText({
+    paste("El valor actual actuarial de la pensión a otorgarse es: ", round(calcularVApensiones(),1))
+  })
   
-})
+  output$cobertura <- renderText({
+    paste("Porcentaje con el que debe aportar el Estado Ecuatoriano para cubrir el pago de la pensión del individuo: ", 
+          round(((calcularVApensiones()- calcularAhorro())/calcularVApensiones())*100,1), '%')
+  })
 
-
-output$VApension <- renderText({
-  paste("El valor actual actuarial de la pensión a otorgarse es: ", round(calcularVApensiones(),1))
-})
-
-output$cobertura <- renderText({
-  paste("Porcentaje con el que debe aportar el Estado Ecuatoriano para cubrir el pago de la pensión del individuo: ", 
-        round(((calcularVApensiones()- calcularAhorro())/calcularVApensiones())*100,1), '%')
-})
-
-
+  output$pension_teorica_actual <- renderText({
+    paste("La pensión teórica que recibiría actualmente sin las reformas es: $", 
+          round(Pension(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio)), 2)
+          )
+  })
+  
+  output$tasa_reemplazo <- renderText({
+    paste("La tasa de reemplazo es: ", 
+          round( TasaReemplazo(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio)), 2)
+    )
+  })
 
 
 

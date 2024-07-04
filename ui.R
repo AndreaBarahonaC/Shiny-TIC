@@ -38,7 +38,9 @@ ui <- fluidPage(
             textOutput("ahorro"), 
             textOutput("Naportes"),
             textOutput("VApension"),
-            textOutput("cobertura")
+            textOutput("cobertura"), 
+            textOutput("pension_teorica_actual"),
+            textOutput("tasa_reemplazo")
           )
         )
       )
