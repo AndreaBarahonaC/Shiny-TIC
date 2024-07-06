@@ -31,6 +31,7 @@ ui <- fluidPage(
           radioButtons("sexo", "Seleccione su sexo:",
                        c("Hombre" = "M", "Mujer" = "F"), selected = "F"),
           numericInput("edad_inicio", "Edad de inicio de cotizaciones (años):", value = 25, min = 18, max = 100),
+          numericInput("anio_inicio", "Año de inicio de cotizaciones :", value = 2010, min = 1960, max = 2080),
           numericInput("interes", "Interés (%):", value = 6.25, min = 0),
           numericInput("inflacion", "Inflación (%):", value = 1.826, min = 0),
           numericInput("salario", "Primer sueldo al iniciar las cotizaciones:", value = 600, min = 0),
@@ -44,6 +45,7 @@ ui <- fluidPage(
           textOutput("VApension"),
           textOutput("cobertura"),
           textOutput("pension_teorica_actual"),
+          textOutput("pension_teorica_jub"),
           textOutput("tasa_reemplazo")
         )
       )

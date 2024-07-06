@@ -25,13 +25,60 @@ for (i in 41:100) { # Añadir nuevas filas para cuando supera los 40 años de ap
 }
 
 
-# FUNCIONES 
+# FUNCION PARA MINIMOS Y MAXIMOS DE PENSIONES
+rango_valores_min <- list(
+  list(rango = c(0, 10 * 12), valor_punto = 230),
+  list(rango = c(11 * 12, 20 * 12), valor_punto = 276),
+  list(rango = c(21 * 12, 30 * 12), valor_punto = 322),
+  list(rango = c(31 * 12, 35 * 12), valor_punto = 368),
+  list(rango = c(36 * 12, 39 * 12), valor_punto = 414),
+  list(rango = c(40 * 12, Inf), valor_punto = 460)
+)
 
+rango_valores_max <- list(
+  list(rango = c(0, 10 * 12), valor_punto = 1150),
+  list(rango = c(15 * 12, 19 * 12), valor_punto = 1380),
+  list(rango = c(20 * 12, 24 * 12), valor_punto = 1610),
+  list(rango = c(25 * 12, 29 * 12), valor_punto = 1840),
+  list(rango = c(30 * 12, 34 * 12), valor_punto = 2070),
+  list(rango = c(35 * 12, 39 * 12), valor_punto = 2300),
+  list(rango = c(4 * 120, Inf), valor_punto = 2530)
+)
+
+# Función para ajustar la pensión según mínimos
+ajustar_pension_min <- function(numero_imposiciones, pension, rango_valores) {
+  for (rango_valor in rango_valores) {
+    rango <- rango_valor$rango
+    valor_punto <- rango_valor$valor_punto
+    if (!is.na(valor_punto) && !is.na(pension) & rango[1] <= numero_imposiciones & numero_imposiciones <= rango[2]) {
+      if (pension < valor_punto) {
+        pension <- valor_punto
+      }
+    }
+  }
+  return(pension)
+}
+
+
+# Función para ajustar la pensión según máximos
+ajustar_pension_max <- function(numero_imposiciones, pension, rango_valores) {
+  for (rango_valor in rango_valores) {
+    rango <- rango_valor$rango
+    valor_punto <- rango_valor$valor_punto
+    if (!is.na(valor_punto) && !is.na(pension) & rango[1] <= numero_imposiciones & numero_imposiciones <= rango[2]) {
+      if (pension > valor_punto) {
+        pension <- valor_punto
+      }
+    }
+  }
+  return(pension)
+}
+
+
+# FUNCIONES 
 Pension <- function(edad, salario, anios_aporte){
   
-  
-  if(salario > 460){ incremento <- 0.021540}
-  else{ incremento <- 0.025339 }
+  incremento <- 0.025339 
   
   # Creamos un vector con los últimos 5 mejores salarios 
   mejores_5_salarios <- sapply(1:5, function(i) {
@@ -43,13 +90,18 @@ Pension <- function(edad, salario, anios_aporte){
   coef <- Coeficiente$Coef[Coeficiente$An.Imposiciones == anios_aporte]
   
   pension <- prom * coef 
-  return(list(pension*(1.018261)^(anios_aporte), prom))
+  
+  pension <- ajustar_pension_min(anios_aporte*12, pension, rango_valores_min)
+  pension <- ajustar_pension_max(anios_aporte*12, pension, rango_valores_max)
+  
+  return(list(pension, prom))
 }
+
+
 
 TasaReemplazo <- function(edad, salario, anios_aporte){
   
-  if(salario > 460){incremento <- 0.021540}
-  else{incremento <- 0.025339 }
+  incremento <- 0.025339
   
   pension <- Pension(edad, salario, anios_aporte)[[1]]
   ultimo_sueldo <- salario * (1+incremento)^(anios_aporte - 1)
@@ -125,11 +177,10 @@ server <- function(input, output, session) {
   })
   
   
- 
+  
   # Ahorro
   calcularAhorro <- reactive({
     edad_inicio <- input$edad_inicio
-    salario0 <- input$salario
     inflacion <- input$inflacion / 100 
     interes <- input$interes /100
     edad_jubilacion <- input$edad_jubilacion
@@ -137,6 +188,9 @@ server <- function(input, output, session) {
     
     IVM <- 0.1106 
     crec_salarios <- 0.02154
+    salario0 <- input$salario *(1+ crec_salarios)^(-input$anio_inicio + (2024 - anios_aporte))
+    
+    
     
     # Calculo del ahorro de un afiliado hasta su jubilación
     i_12 <- (1+interes)^(1/12) - 1
@@ -182,19 +236,48 @@ server <- function(input, output, session) {
   
   load("C:/Users/MyHP/Desktop/TIC/Shiny-TIC/obtencion_pension_prom.Rdata")
   
-  pensiones2 <- pensiones2 %>%  mutate( salario_a_usar = promedio_sueldo_real *(1.02154)^(2024 - as.numeric(format(as.Date(fecha_inicial_pension, '%Y %m %d'), "%Y"))), .before=promedio_sueldo_real)
+  # arreglo base de datos 
+  #establecimiento minimo y maximo de pensiones
+  
+  pensiones2 <- pensiones2 %>%  mutate( prom_salario_a_usar = promedio_sueldo_real *(1.02154)^(2024 - as.numeric(format(as.Date(fecha_inicial_pension, '%Y %m %d'), "%Y"))), .before=promedio_sueldo_real)
+  pensiones2 <- pensiones2 %>%  mutate(pension_final1 = pension_final *( 1.018261)^(2024 - as.numeric(format(as.Date(fecha_inicial_pension, '%Y %m %d'), "%Y"))), .before=pension_final)
+  
+  pensiones2 <- pensiones2 %>% mutate(pensionesfinal2 = pension_final1)
+  pensiones2 <- pensiones2 %>% dplyr::filter(tipo_seguro != 'SC')
+  
+  pensiones2 <- pensiones2 %>%
+    mutate(pensionesfinal2 = case_when(
+      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 < 230, 230, pensionesfinal2),
+      11 * 12 <= numero_imposiciones & numero_imposiciones <= 20 * 12 ~ ifelse(pensionesfinal2 < 276, 276, pensionesfinal2),
+      21 * 12 <= numero_imposiciones & numero_imposiciones <= 30 * 12 ~ ifelse(pensionesfinal2 < 322, 322, pensionesfinal2),
+      31 * 12 <= numero_imposiciones & numero_imposiciones <= 35 * 12 ~ ifelse(pensionesfinal2 < 368, 368, pensionesfinal2),
+      36 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 < 414, 414, pensionesfinal2),
+      40 * 12 <= numero_imposiciones ~ ifelse(pensionesfinal2 < 460, 460, pensionesfinal2),
+      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 > 1150, 1150, pensionesfinal2),
+      15 * 12 <= numero_imposiciones & numero_imposiciones <= 19 * 12 ~ ifelse(pensionesfinal2 > 1380, 1380, pensionesfinal2),
+      20 * 12 <= numero_imposiciones & numero_imposiciones <= 24 * 12 ~ ifelse(pensionesfinal2 > 1610, 1610, pensionesfinal2),
+      25 * 12 <= numero_imposiciones & numero_imposiciones <= 29 * 12 ~ ifelse(pensionesfinal2 > 1840, 1840, pensionesfinal2),
+      30 * 12 <= numero_imposiciones & numero_imposiciones <= 34 * 12 ~ ifelse(pensionesfinal2 > 2070, 2070, pensionesfinal2),
+      35 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 > 2300, 2300, pensionesfinal2),
+      4 * 120 <= numero_imposiciones ~ ifelse(pensionesfinal2 > 2530, 2530, pensionesfinal2),
+      TRUE ~ pensionesfinal2
+    ))
   
   
   #Función de cálculo de la pensión promedio
   
+  
   pension_promedio_fun <- function(e_j, impo, sexo1, sal_ini, anios_aporte){
     crec_salarios <- 0.02154
+    
     res <- pensiones2 %>%  dplyr::filter(minimo(input$edad_inicio) <=edad_jubilacion & edad_jubilacion <= e_j + 3) %>%  
-      dplyr::filter(impo + 36 >= numero_imposiciones_totales &  numero_imposiciones_totales >= ((minimo(input$edad_inicio) - input$edad_inicio)*12) ) %>% 
+      dplyr::filter(impo + 24 >= numero_imposiciones &  numero_imposiciones >= ((minimo(input$edad_inicio) - input$edad_inicio)*12) ) %>% 
       dplyr::filter(sexo == sexo1) %>% 
-      mutate(salario_a_usar1 = ifelse(salario_a_usar ==0, mean(pensiones2$salario_a_usar[pensiones2$salario_a_usar !=0]),salario_a_usar)) %>% 
-      dplyr::filter( sal_ini <= salario_a_usar1 & salario_a_usar1 <= sal_ini *(1.02154)^(anios_aporte -1) )
-    prom <- mean(res$pension_final)
+      mutate(prom_salario_a_usar1 = ifelse(prom_salario_a_usar ==0, mean(pensiones2$prom_salario_a_usar[pensiones2$prom_salario_a_usar !=0]),prom_salario_a_usar)) %>% 
+      dplyr::filter( Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]] - 300 <= prom_salario_a_usar1 & prom_salario_a_usar1 <= Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]]+200)
+      #-300, -400
+    
+    prom <- mean(res$pensionesfinal2)
     
     return(prom)
   }
@@ -211,16 +294,17 @@ server <- function(input, output, session) {
     crec_pensiones <- 1.8261/100
     inflacion <- input$inflacion / 100 
     interes <- input$interes /100
-    salario <- input$salario
+    crec_salarios <- 0.02154
+    salario <- input$salario *(1+ crec_salarios)^(-input$anio_inicio + (2024 - anios_aporte))
     #Cálculo de la pensión promedio
     
-    
+    #pension_promedio <- Pension(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio))[[1]]
     pension_promedio <- pension_promedio_fun(edad_jubilacion, anios_aporte*12, sexo, salario, anios_aporte)
     
     # Calculo del VA de la pension
     i_12 <- (1+interes)^(1/12) - 1
     
-    C <- (pension_promedio *(1+ crec_pensiones)^(anios_aporte)) * annuity(i = i_12, n=12, type = "due")
+    C <- pension_promedio* annuity(i = i_12, n=12, type = "due")
     if(sexo == 'M'){
       va_pension <- C * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
     }else{
@@ -228,7 +312,7 @@ server <- function(input, output, session) {
       
     }
     
-    pension <- pension_promedio  *(1+ crec_pensiones)^(anios_aporte)
+    pension <- pension_promedio  
     
     return(list(va_pension, pension))
     
@@ -251,15 +335,40 @@ server <- function(input, output, session) {
 
   output$pension_teorica_actual <- renderText({
     paste("La pensión teórica que recibiría actualmente sin las reformas es: $", 
-          round(Pension(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
+          round(Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
           )
   })
+  
+  output$pension_teorica_actual <- renderText({
+    paste("La pensión teórica que recibiría al momento de su jubilación sin las reformas es: $", 
+          round(Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
+    )
+  })
+  
+  output$pension_teorica_jub <- renderText({
+    paste("La pensión teórica que recibiría al momento de su jubilación sin las reformas es: $", 
+          round(Pension(input$edad_inicio, input$salario , (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
+    )
+  })
+  
   
   output$tasa_reemplazo <- renderText({
     paste("La tasa de reemplazo es: ", 
           round( TasaReemplazo(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio)), 2)
     )
   })
+  
+  
+  
+  
+  
+  
+  # GRAFICO, CUÁNDO SE PRESENTA EL DÉFICIT DEPENDIENDO DEL APORTE DEL ESTADO DEL 10% AL 40%
+  # USO DE LA INFORMACIÓN DADA POR LA BASE DE DATOS PROPORCIONADA
+  
+  
+  
+  
 
 
 }
