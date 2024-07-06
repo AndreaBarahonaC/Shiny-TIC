@@ -339,15 +339,16 @@ server <- function(input, output, session) {
           )
   })
   
-  output$pension_teorica_actual <- renderText({
-    paste("La pensión teórica que recibiría al momento de su jubilación sin las reformas es: $", 
-          round(Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
-    )
-  })
   
   output$pension_teorica_jub <- renderText({
     paste("La pensión teórica que recibiría al momento de su jubilación sin las reformas es: $", 
           round(Pension(input$edad_inicio, input$salario , (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
+    )
+  })
+  
+  output$pension_teorica_jub_o <- renderText({
+    paste("La pensión teórica que recibiría al momento de su jubilación capitalizando la pensión actual obtenida: $", 
+          round((Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]])*(1.018261 )^((input$edad_jubilacion-input$edad_inicio)- (2024 - input$anio_inicio)),2)
     )
   })
   
