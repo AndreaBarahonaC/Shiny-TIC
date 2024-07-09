@@ -16,6 +16,7 @@ library(shinydashboard)
 library(DT)
 
 
+
 ui <- fluidPage(
   theme = shinytheme("readable"),
   tags$head(
@@ -98,13 +99,15 @@ ui <- fluidPage(
           ),
           
           fluidRow(
-            box(title = tags$h3("Evolución del ahorro y gasto del individuo"), status = "warning", solidHeader = TRUE, width = 12),
-            p("no se me imprime mi tablita :c")
-            #,
-                # tableOutput("table1"))
+            h3("Evolución del ahorro y gasto del individuo"),
+            highchartOutput("evolucion_reservas")
           ),
           
-          highchartOutput("deficit_porcentaje")
+          highchartOutput("deficit_porcentaje"),
+          highchartOutput("tiempo_sss"),
+          highchartOutput("porc_cobertura"),
+          highchartOutput("ahorros_vs_prestaciones"),
+          highchartOutput("penprom_vs_penind")
         )
       )
     ),
