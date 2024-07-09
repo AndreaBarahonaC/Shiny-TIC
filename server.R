@@ -97,25 +97,6 @@ server <- function(input, output, session) {
   pensiones2 <- pensiones2 %>% mutate(pensionesfinal2 = pension_final1)
   pensiones2 <- pensiones2 %>% dplyr::filter(tipo_seguro != 'SC')
   
-  pensiones2 <- pensiones2 %>%
-    mutate(pensionesfinal2 = case_when(
-      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 < 230, 230, pensionesfinal2),
-      11 * 12 <= numero_imposiciones & numero_imposiciones <= 20 * 12 ~ ifelse(pensionesfinal2 < 276, 276, pensionesfinal2),
-      21 * 12 <= numero_imposiciones & numero_imposiciones <= 30 * 12 ~ ifelse(pensionesfinal2 < 322, 322, pensionesfinal2),
-      31 * 12 <= numero_imposiciones & numero_imposiciones <= 35 * 12 ~ ifelse(pensionesfinal2 < 368, 368, pensionesfinal2),
-      36 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 < 414, 414, pensionesfinal2),
-      40 * 12 <= numero_imposiciones ~ ifelse(pensionesfinal2 < 460, 460, pensionesfinal2),
-      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 > 1150, 1150, pensionesfinal2),
-      15 * 12 <= numero_imposiciones & numero_imposiciones <= 19 * 12 ~ ifelse(pensionesfinal2 > 1380, 1380, pensionesfinal2),
-      20 * 12 <= numero_imposiciones & numero_imposiciones <= 24 * 12 ~ ifelse(pensionesfinal2 > 1610, 1610, pensionesfinal2),
-      25 * 12 <= numero_imposiciones & numero_imposiciones <= 29 * 12 ~ ifelse(pensionesfinal2 > 1840, 1840, pensionesfinal2),
-      30 * 12 <= numero_imposiciones & numero_imposiciones <= 34 * 12 ~ ifelse(pensionesfinal2 > 2070, 2070, pensionesfinal2),
-      35 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 > 2300, 2300, pensionesfinal2),
-      4 * 120 <= numero_imposiciones ~ ifelse(pensionesfinal2 > 2530, 2530, pensionesfinal2),
-      TRUE ~ pensionesfinal2
-    ))
-  
-  
   #Función de cálculo de la pensión promedio
   
   
@@ -214,8 +195,8 @@ server <- function(input, output, session) {
   
   # Evolucion de la reserva del individuo
   
-  Reserva <- reactive({
-    
+  
+  evolucion_reservas <- reactive({
     sexo <- input$sexo
     edad_inicio <- input$edad_inicio
     edad_jubilacion <- ifelse(input$edad_jubilacion>=60,input$edad_jubilacion,60)
@@ -228,52 +209,75 @@ server <- function(input, output, session) {
     salario_hoy <- input$salario *(1+ crec_salarios)^(-input$anio_inicio + (2024 - anios_aporte))
     salario_ini <- input$salario
     anio_ini <- input$anio_inicio
+    anio_fin <- anio_ini + (edad_jubilacion-edad_inicio-1)
     
     # Reserva mientras cotiza
     
-    reservas_c <- data.frame(
-      edades = c(edad_inicio:(edad_jubilacion-1)),
-      imposicion_anual_a_esa_edad_hoy = numeric(anios_aporte),
-      reserva_a_esa_edad_hoy = numeric(anios_aporte)
-    )
     
-    for(i in c(0:(anios_aporte-1))){
-      reservas_c$imposicion_anual_a_esa_edad_hoy[i+1] <- salario_ini*(1+0.02154)^(i)*0.1106*12*(1+interes)^(2024-anio_ini-i)
-      if(i==0){
-        reservas_c$reserva_a_esa_edad_hoy[i+1] <- reservas_c$imposicion_anual_a_esa_edad_hoy[i]
-      }else{
-        reservas_c$reserva_a_esa_edad_hoy[i+1] <- sum(reservas_c$reserva_a_esa_edad_hoy)
-      }
-    }
-    
-    # Reserva al pensionarse
-    
-    ahorro_hoy <- reservas_c$reserva_a_esa_edad_hoy[anios_aporte]
-    pension_ini <- Pension(input$edad_inicio, input$salario , (input$edad_jubilacion - input$edad_inicio))[[1]]
-    
-    reservas_p <- data.frame(
-      edades = c(edad_jubilacion,99),
-      pension_hoy = numeric(length(c(edad_jubilacion,99))),
-      gasto_anual = numeric(length(c(edad_jubilacion,99))),
-      reserva_hoy = numeric(length(c(edad_jubilacion,99)))
-    )
-    
-    for(i in c(0:length(c(edad_jubilacion,99)))){
-      
-      reservas_p$pension_hoy[i+1] = pension_ini*(1+0.018261)^(i)
-      reservas_p$gasto_anual[i+1] = reservas_p$pension_hoy[i+1]*12
-      reserva_p$reserva_hoy[i+1] = ahorro_hoy - sum(reservas_p$gasto_anual)
-    }
-    
-    reservas_c <- reservas_c %>% mutate(res = reserva_a_esa_edad_hoy) %>% select(edades,res)
-    reservas_p <- reservas_p %>% mutate(res = reserva_hoy) %>% select(edades,res)
-    
-    reservas <- rbind(reservas_c,reservas_p)
-    
-    return(list(reservas$edades,reservas$res))
     
   })
   
+  
+  # Reserva <- reactive({
+  #   
+  #   sexo <- input$sexo
+  #   edad_inicio <- input$edad_inicio
+  #   edad_jubilacion <- ifelse(input$edad_jubilacion>=60,input$edad_jubilacion,60)
+  #   n_pensiones <- 100 - edad_jubilacion # 100 años de edad como límite
+  #   anios_aporte <- edad_jubilacion-edad_inicio
+  #   crec_pensiones <- 1.8261/100
+  #   inflacion <- input$inflacion / 100 
+  #   interes <- input$interes /100
+  #   crec_salarios <- 0.02154
+  #   salario_hoy <- input$salario *(1+ crec_salarios)^(-input$anio_inicio + (2024 - anios_aporte))
+  #   salario_ini <- input$salario
+  #   anio_ini <- input$anio_inicio
+  #   
+  #   # Reserva mientras cotiza
+  #   
+  #   reservas_c <- data.frame(
+  #     edades = c(edad_inicio:(edad_jubilacion-1)),
+  #     imposicion_anual_a_esa_edad_hoy = numeric(anios_aporte),
+  #     reserva_a_esa_edad_hoy = numeric(anios_aporte)
+  #   )
+  #   
+  #   for(i in c(0:(anios_aporte-1))){
+  #     reservas_c$imposicion_anual_a_esa_edad_hoy[i+1] <- salario_ini*(1+0.02154)^(i)*0.1106*12*(1+interes)^(2024-anio_ini-i)
+  #     if(i==0){
+  #       reservas_c$reserva_a_esa_edad_hoy[i+1] <- reservas_c$imposicion_anual_a_esa_edad_hoy[i]
+  #     }else{
+  #       reservas_c$reserva_a_esa_edad_hoy[i+1] <- sum(reservas_c$reserva_a_esa_edad_hoy)
+  #     }
+  #   }
+  #   
+  #   # Reserva al pensionarse
+  #   
+  #   ahorro_hoy <- reservas_c$reserva_a_esa_edad_hoy[anios_aporte]
+  #   pension_ini <- Pension(input$edad_inicio, input$salario , (input$edad_jubilacion - input$edad_inicio))[[1]]
+  #   
+  #   reservas_p <- data.frame(
+  #     edades = c(edad_jubilacion,99),
+  #     pension_hoy = numeric(length(c(edad_jubilacion,99))),
+  #     gasto_anual = numeric(length(c(edad_jubilacion,99))),
+  #     reserva_hoy = numeric(length(c(edad_jubilacion,99)))
+  #   )
+  #   
+  #   for(i in c(0:length(c(edad_jubilacion,99)))){
+  #     
+  #     reservas_p$pension_hoy[i+1] = pension_ini*(1+0.018261)^(i)
+  #     reservas_p$gasto_anual[i+1] = reservas_p$pension_hoy[i+1]*12
+  #     reserva_p$reserva_hoy[i+1] = ahorro_hoy - sum(reservas_p$gasto_anual)
+  #   }
+  #   
+  #   reservas_c <- reservas_c %>% mutate(res = reserva_a_esa_edad_hoy) %>% select(edades,res)
+  #   reservas_p <- reservas_p %>% mutate(res = reserva_hoy) %>% select(edades,res)
+  #   
+  #   reservas <- rbind(reservas_c,reservas_p)
+  #   
+  #   return(list(reservas$edades,reservas$res))
+  #   
+  # })
+  # 
   
   # output$table1 <- renderTable({ Reserva() })
   
@@ -284,10 +288,7 @@ server <- function(input, output, session) {
   
   # GRAFICO, CUÁNDO SE PRESENTA EL DÉFICIT DEPENDIENDO DEL APORTE DEL ESTADO DEL 10% AL 40%
   # USO DE LA INFORMACIÓN DADA POR LA BASE DE DATOS PROPORCIONADA
-  
-  
-  
-  
+
 
 
 }

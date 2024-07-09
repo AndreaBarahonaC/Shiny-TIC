@@ -16,20 +16,20 @@ library(DT)
 
 ui <- fluidPage(
   theme = shinytheme("readable"),
-  # tags$head(
-  #   tags$style(HTML("
-  #     .box {
-  #       border: 0.5px solid #FFBCAE; /* Bordes de las cajas */
-  #       padding: 10px; /* Espaciado interno */
-  #       margin-bottom: 15px; /* Espaciado entre cajas */
-  #       border-radius: 10px; /* Bordes redondeados */
-  #     }
-  #     .box-title {
-  #       font-size: 20px; /* Tamaño del título */
-  #       font-weight: bold; /* Negrita para el título */
-  #     }
-  #   "))
-  # ),
+  tags$head(
+    tags$style(HTML("
+      .box {
+        border: 0.5px solid #FFBCAE; /* Bordes de las cajas */
+        padding: 10px; /* Espaciado interno */
+        margin-bottom: 15px; /* Espaciado entre cajas */
+        border-radius: 10px; /* Bordes redondeados */
+      }
+      .box-title {
+        font-size: 20px; /* Tamaño del título */
+        font-weight: bold; /* Negrita para el título */
+      }
+    "))
+  ),
   # shinythemes::themeSelector(), #tenemos que elegir solo un tema al final
   fluidRow(
     column(3, img(src = "logo_epn.png", height = "100px", align = "right")),
