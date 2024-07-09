@@ -5,6 +5,7 @@
 ##########
 library(shiny)
 library(shinythemes)
+library(highcharter)
 
 ui <- fluidPage(
   theme = shinytheme("readable"),
@@ -52,7 +53,8 @@ ui <- fluidPage(
           textOutput("pension_teorica_actual"),
           textOutput("pension_teorica_jub"),
           textOutput("pension_teorica_jub_o"),
-          textOutput("tasa_reemplazo")
+          textOutput("tasa_reemplazo"),
+          highchartOutput("deficit_porcentaje")
         )
       )
     ),

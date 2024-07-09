@@ -8,6 +8,7 @@ library(tidyverse)
 library(data.table)
 library(shinythemes)
 library(shinydashboard)
+library(highcharter)
 
 options(scipen = 999)
 
@@ -245,24 +246,6 @@ server <- function(input, output, session) {
   pensiones2 <- pensiones2 %>% mutate(pensionesfinal2 = pension_final1)
   pensiones2 <- pensiones2 %>% dplyr::filter(tipo_seguro != 'SC')
   
-  pensiones2 <- pensiones2 %>%
-    mutate(pensionesfinal2 = case_when(
-      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 < 230, 230, pensionesfinal2),
-      11 * 12 <= numero_imposiciones & numero_imposiciones <= 20 * 12 ~ ifelse(pensionesfinal2 < 276, 276, pensionesfinal2),
-      21 * 12 <= numero_imposiciones & numero_imposiciones <= 30 * 12 ~ ifelse(pensionesfinal2 < 322, 322, pensionesfinal2),
-      31 * 12 <= numero_imposiciones & numero_imposiciones <= 35 * 12 ~ ifelse(pensionesfinal2 < 368, 368, pensionesfinal2),
-      36 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 < 414, 414, pensionesfinal2),
-      40 * 12 <= numero_imposiciones ~ ifelse(pensionesfinal2 < 460, 460, pensionesfinal2),
-      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 > 1150, 1150, pensionesfinal2),
-      15 * 12 <= numero_imposiciones & numero_imposiciones <= 19 * 12 ~ ifelse(pensionesfinal2 > 1380, 1380, pensionesfinal2),
-      20 * 12 <= numero_imposiciones & numero_imposiciones <= 24 * 12 ~ ifelse(pensionesfinal2 > 1610, 1610, pensionesfinal2),
-      25 * 12 <= numero_imposiciones & numero_imposiciones <= 29 * 12 ~ ifelse(pensionesfinal2 > 1840, 1840, pensionesfinal2),
-      30 * 12 <= numero_imposiciones & numero_imposiciones <= 34 * 12 ~ ifelse(pensionesfinal2 > 2070, 2070, pensionesfinal2),
-      35 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 > 2300, 2300, pensionesfinal2),
-      4 * 120 <= numero_imposiciones ~ ifelse(pensionesfinal2 > 2530, 2530, pensionesfinal2),
-      TRUE ~ pensionesfinal2
-    ))
-  
   
   #Función de cálculo de la pensión promedio
   
@@ -274,7 +257,7 @@ server <- function(input, output, session) {
       dplyr::filter(impo + 24 >= numero_imposiciones &  numero_imposiciones >= ((minimo(input$edad_inicio) - input$edad_inicio)*12) ) %>% 
       dplyr::filter(sexo == sexo1) %>% 
       mutate(prom_salario_a_usar1 = ifelse(prom_salario_a_usar ==0, mean(pensiones2$prom_salario_a_usar[pensiones2$prom_salario_a_usar !=0]),prom_salario_a_usar)) %>% 
-      dplyr::filter( Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]] - 300 <= prom_salario_a_usar1 & prom_salario_a_usar1 <= Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]]+200)
+      dplyr::filter( Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]] - 300 <= prom_salario_a_usar1 & prom_salario_a_usar1 <= Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]]+100)
       #-300, -400
     
     prom <- mean(res$pensionesfinal2)
@@ -366,11 +349,60 @@ server <- function(input, output, session) {
   
   # GRAFICO, CUÁNDO SE PRESENTA EL DÉFICIT DEPENDIENDO DEL APORTE DEL ESTADO DEL 10% AL 40%
   # USO DE LA INFORMACIÓN DADA POR LA BASE DE DATOS PROPORCIONADA
-  
-  
-  
-  
 
+
+  fun_anio_deficit<- function (ahorro, va_pensiones, pension_inicial, porcentaje_estado){
+
+      ahorro <- ahorro + (porcentaje_estado/100)* va_pensiones
+      crec_pensiones <- 1.8261/100
+      interes <- input$interes/100
+      i_12 <- (1+(input$interes/100))^(1/12) - 1
+
+      pension <- pension_inicial * annuity(i = i_12, n=12, type = "due")
+      i <- 1
+
+      while((ahorro - pension) > 0){
+        ahorro <- (ahorro - pension)* (1 + interes)
+        pension <- pension * (1+ crec_pensiones)
+        i <- i + 1
+        if (!is.finite(ahorro)) {
+          return(110) 
+        }
+        
+      }
+      
+      return(i + input$edad_jubilacion)
+  }
+
+  output$deficit_porcentaje <- renderHighchart({
+    y <- c()
+    for (k in 0:40){
+      y <- c(y , fun_anio_deficit(calcularAhorro(), calcularVApensiones()[[1]] ,calcularVApensiones()[[2]] , k))
+    }
+
+    data <- data.frame(
+      x = seq(0, 40, by = 1),
+      y = y
+    )
+
+    # Crear gráfico de Highcharts
+    data %>% 
+      hchart(., 
+             type = "line",styled = TRUE,
+             name= 'Edad del jubilado',
+             hcaes(x = x, 
+                   y = y)) %>% 
+      hc_title(text = "Impacto del Porcentaje de Aportación del Estado en la Sostenibilidad de las Pensiones") %>% 
+      hc_subtitle(text = "Edad del jubilado al agotarse los recursos para el pago de su pensión según el porcentaje de aporte del Estado") %>% 
+      hc_xAxis(title = list(text = "Porcentaje de Aportación del Estado")) %>%  
+      hc_yAxis(title = list(text = "Edad del jubilado donde se alcanza el déficit")) %>% 
+      hc_add_theme(hc_theme_elementary()) 
+    
+    
+  })
+
+
+  
 
 }
 
