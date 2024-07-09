@@ -14,6 +14,9 @@ library(shinythemes)
 library(highcharter)
 library(shinydashboard)
 library(DT)
+library(kableExtra)
+library(ggplot2)
+
 
 
 ui <- fluidPage(
@@ -69,15 +72,15 @@ ui <- fluidPage(
         ),
         mainPanel(
           fluidRow(
-            box(title = tags$h4("Ahorro"), status = "primary", solidHeader = TRUE, width = 6,
+            box(title = tags$h4("Ahorro hasta el momento de la jubilación"), status = "primary", solidHeader = TRUE, width = 6,
                 textOutput("ahorro")),
             box(title = tags$h4("Años Aportados"), status = "info", solidHeader = TRUE, width = 6,
                 textOutput("Naportes"))
           ),
           fluidRow(
-            box(title = tags$h4("Pensión Promedio"), status = "success", solidHeader = TRUE, width = 6,
+            box(title = tags$h4("Pensión Promedio Actual"), status = "success", solidHeader = TRUE, width = 6,
                 textOutput("pensionpromedio")),
-            box(title = tags$h4("Valor Actual de la Pensión"), status = "warning", solidHeader = TRUE, width = 6,
+            box(title = tags$h4("Valor de la Pensión al momento de la jubilación"), status = "warning", solidHeader = TRUE, width = 6,
                 textOutput("VApension"))
           ),
           fluidRow(
@@ -98,13 +101,16 @@ ui <- fluidPage(
           ),
           
           fluidRow(
-            box(title = tags$h3("Evolución del ahorro y gasto del individuo"), status = "warning", solidHeader = TRUE, width = 12),
-            p("no se me imprime mi tablita :c")
-            #,
-                # tableOutput("table1"))
+            h3("Evolución del ahorro y gasto del individuo"),
+            highchartOutput("evolucion_reservas")
           ),
           
-          highchartOutput("deficit_porcentaje")
+          highchartOutput("deficit_porcentaje"),
+          highchartOutput("tiempo_sss"),
+          highchartOutput("porc_cobertura"),
+          highchartOutput("ahorros_vs_prestaciones"),
+          highchartOutput("penprom_vs_penind"),
+          tableOutput("tabla_pensiones")
         )
       )
     ),

@@ -8,6 +8,7 @@ library(data.table)
 library(shinythemes)
 library(shinydashboard)
 library(DT)
+library(highcharter)
 
 # COEFICIENTES
 
