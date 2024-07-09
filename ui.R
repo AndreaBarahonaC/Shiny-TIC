@@ -68,15 +68,6 @@ ui <- fluidPage(
           textOutput("minjub")
         ),
         mainPanel(
-          # textOutput("ahorro"),
-          # textOutput("Naportes"),
-          # textOutput("pensionpromedio"),
-          # textOutput("VApension"),
-          # textOutput("cobertura"),
-          # textOutput("pension_teorica_actual"),
-          # textOutput("pension_teorica_jub"),
-          # textOutput("pension_teorica_jub_o"),
-          # textOutput("tasa_reemplazo"),
           fluidRow(
             box(title = tags$h4("Ahorro"), status = "primary", solidHeader = TRUE, width = 6,
                 textOutput("ahorro")),
