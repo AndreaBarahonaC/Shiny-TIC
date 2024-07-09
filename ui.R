@@ -14,6 +14,8 @@ library(shinythemes)
 library(highcharter)
 library(shinydashboard)
 library(DT)
+library(kableExtra)
+library(ggplot2)
 
 
 
@@ -107,7 +109,8 @@ ui <- fluidPage(
           highchartOutput("tiempo_sss"),
           highchartOutput("porc_cobertura"),
           highchartOutput("ahorros_vs_prestaciones"),
-          highchartOutput("penprom_vs_penind")
+          highchartOutput("penprom_vs_penind"),
+          tableOutput("tabla_pensiones")
         )
       )
     ),
