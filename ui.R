@@ -11,8 +11,10 @@ library(readxl)
 library(tidyverse)
 library(data.table)
 library(shinythemes)
+library(highcharter)
 library(shinydashboard)
 library(DT)
+
 
 ui <- fluidPage(
   theme = shinytheme("readable"),
@@ -100,7 +102,9 @@ ui <- fluidPage(
             p("no se me imprime mi tablita :c")
             #,
                 # tableOutput("table1"))
-          )
+          ),
+          
+          highchartOutput("deficit_porcentaje")
         )
       )
     ),
