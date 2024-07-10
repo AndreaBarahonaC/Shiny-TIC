@@ -24,27 +24,6 @@ for (i in 41:100) { # Añadir nuevas filas para cuando supera los 40 años de ap
 }
 
 
-# FUNCION PARA MINIMOS Y MAXIMOS DE PENSIONES
-rango_valores_min <- list(
-  list(rango = c(0, 10 * 12), valor_punto = 230),
-  list(rango = c(11 * 12, 20 * 12), valor_punto = 276),
-  list(rango = c(21 * 12, 30 * 12), valor_punto = 322),
-  list(rango = c(31 * 12, 35 * 12), valor_punto = 368),
-  list(rango = c(36 * 12, 39 * 12), valor_punto = 414),
-  list(rango = c(40 * 12, Inf), valor_punto = 460)
-)
-
-rango_valores_max <- list(
-  list(rango = c(0, 10 * 12), valor_punto = 1150),
-  list(rango = c(15 * 12, 19 * 12), valor_punto = 1380),
-  list(rango = c(20 * 12, 24 * 12), valor_punto = 1610),
-  list(rango = c(25 * 12, 29 * 12), valor_punto = 1840),
-  list(rango = c(30 * 12, 34 * 12), valor_punto = 2070),
-  list(rango = c(35 * 12, 39 * 12), valor_punto = 2300),
-  list(rango = c(4 * 120, Inf), valor_punto = 2530)
-)
-
-
 
 
 # Funciones
@@ -80,39 +59,7 @@ ajustar_pension_max <- function(numero_imposiciones, pension, rango_valores) {
 
 
 
-Pension <- function(edad, salario, anios_aporte){
-  
-  incremento <- 0.025339 
-  
-  # Creamos un vector con los últimos 5 mejores salarios 
-  mejores_5_salarios <- sapply(1:5, function(i) {
-    salario * (1 + incremento)^(anios_aporte - i)
-  })
-  
-  # pension = promedio * coef
-  prom <- sum(mejores_5_salarios) / 5
-  coef <- Coeficiente$Coef[Coeficiente$An.Imposiciones == anios_aporte]
-  
-  pension <- prom * coef 
-  
-  pension <- ajustar_pension_min(anios_aporte*12, pension, rango_valores_min)
-  pension <- ajustar_pension_max(anios_aporte*12, pension, rango_valores_max)
-  
-  return(list(pension, prom))
-}
 
-
-
-TasaReemplazo <- function(edad, salario, anios_aporte){
-  
-  incremento <- 0.025339
-  
-  pension <- Pension(edad, salario, anios_aporte)[[1]]
-  ultimo_sueldo <- salario * (1+incremento)^(anios_aporte - 1)
-  
-  tasa <- (pension / ultimo_sueldo) * 100
-  return(tasa)
-}
 
 
 # Progresión Geometrica 

@@ -17,6 +17,66 @@ options(scipen = 999)
 ## SERVER ###
 server <- function(input, output, session) {
   
+  # FUNCION PARA MINIMOS Y MAXIMOS DE PENSIONES
+  crec_SBU <- 0.02534
+  rango_valores_min <- reactive({
+    rango_valores_min <- list(
+      list(rango = c(0, 10 * 12), valor_punto = 230*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(11 * 12, 20 * 12), valor_punto = 276*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(21 * 12, 30 * 12), valor_punto = 322*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(31 * 12, 35 * 12), valor_punto = 368*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(36 * 12, 39 * 12), valor_punto = 414*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(40 * 12, Inf), valor_punto = 460*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024))
+    )
+    return(rango_valores_min)
+  })
+  
+  rango_valores_max <- reactive({
+    rango_valores_max <- list(
+      list(rango = c(0, 10 * 12), valor_punto = 1150*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(15 * 12, 19 * 12), valor_punto = 1380*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(20 * 12, 24 * 12), valor_punto = 1610*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(25 * 12, 29 * 12), valor_punto = 1840*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(30 * 12, 34 * 12), valor_punto = 2070*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(35 * 12, 39 * 12), valor_punto = 2300*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
+      list(rango = c(4 * 120, Inf), valor_punto = 2530*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024))
+    )
+    return(rango_valores_max)
+  })
+  
+  Pension <- function(edad, salario, anios_aporte){
+    
+    incremento <- 0.025339 
+    
+    # Creamos un vector con los últimos 5 mejores salarios 
+    mejores_5_salarios <- sapply(1:5, function(i) {
+      salario * (1 + incremento)^(anios_aporte - i)
+    })
+    
+    # pension = promedio * coef
+    prom <- sum(mejores_5_salarios) / 5
+    coef <- Coeficiente$Coef[Coeficiente$An.Imposiciones == anios_aporte]
+    
+    pension <- prom * coef 
+    
+    pension <- ajustar_pension_min(anios_aporte*12, pension, rango_valores_min())
+    pension <- ajustar_pension_max(anios_aporte*12, pension, rango_valores_max())
+    
+    return(list(pension, prom))
+  }
+  
+  TasaReemplazo <- function(edad, salario, anios_aporte){
+    
+    incremento <- 0.025339
+    
+    pension <- Pension(edad, salario, anios_aporte)[[1]]
+    ultimo_sueldo <- salario * (1+incremento)^(anios_aporte - 1)
+    
+    tasa <- (pension / ultimo_sueldo) * 100
+    return(tasa)
+  }
+  
+  
   
   
   # Verificar mínimo de edad de jubilación
@@ -31,8 +91,7 @@ server <- function(input, output, session) {
   
   
   
-  # Ahorro
-  calcularAhorro <- reactive({
+  calcularAhorroTotal<- reactive({
     edad_inicio <- input$edad_inicio
     inflacion <- input$inflacion / 100 
     interes <- input$interes /100
@@ -41,8 +100,7 @@ server <- function(input, output, session) {
     
     IVM <- 0.1106 
     crec_salarios <- 0.02154
-    salario0 <- input$salario *(1+ crec_salarios)^(-input$anio_inicio + (2024 - anios_aporte))
-    
+    salario0 <- input$salario 
     
     
     # Calculo del ahorro de un afiliado hasta su jubilación
@@ -59,7 +117,7 @@ server <- function(input, output, session) {
       
     
   output$ahorro <- renderText({
-      paste("El ahorro es: $", round(calcularAhorro(),1))
+      paste("El ahorro es: $", round(calcularAhorroTotal(),1))
     })
   
   output$Naportes <- renderText({
@@ -99,6 +157,8 @@ server <- function(input, output, session) {
   pensiones2 <- pensiones2 %>% mutate(pensionesfinal2 = pension_final1)
   pensiones2 <- pensiones2 %>% dplyr::filter(tipo_seguro != 'SC')
   
+  
+  
   # Función de cálculo de la pensión promedio -----
   
   pension_promedio_fun <- function(e_j, impo, sexo1, sal_ini, anios_aporte){
@@ -116,7 +176,10 @@ server <- function(input, output, session) {
     return(prom)
   }
   
-  calcularVApensiones <- reactive({
+  
+  
+  calcularVApensionesTotal <- reactive({
+    SBU <- 460
     sexo <- input$sexo
     edad_inicio <- input$edad_inicio
     edad_jubilacion <- input$edad_jubilacion
@@ -126,16 +189,16 @@ server <- function(input, output, session) {
     inflacion <- input$inflacion / 100 
     interes <- input$interes /100
     crec_salarios <- 0.02154
-    salario <- input$salario *(1+ crec_salarios)^(-input$anio_inicio + (2024 - anios_aporte))
+    crec_SBU <- 0.02534
+    salario <- input$salario
     #Cálculo de la pensión promedio
     
     pension_promedio <- Pension(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio))[[1]]
-    #pension_promedio <- pension_promedio_fun(edad_jubilacion, anios_aporte*12, sexo, salario, anios_aporte)
     
     # Calculo del VA de la pension
     i_12 <- (1+interes)^(1/12) - 1
     
-    C <- pension_promedio* annuity(i = i_12, n=12, type = "due")
+    C <- pension_promedio* annuity(i = i_12, n=12, type = "due") 
     if(sexo == 'M'){
       va_pension <- C * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
     }else{
@@ -143,30 +206,49 @@ server <- function(input, output, session) {
       
     }
     
+    E1 <- pension_promedio * (1 + i_12)^(-11)
+    if(sexo == 'M'){
+      va_pension1 <- E1 * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
+    }else{
+      va_pension1 <- E1 * axn(TM, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
+      
+    }
+    
+    E2 <- SBU * (1 + i_12)^(-11)
+    if(sexo == 'M'){
+      va_pension2 <- E2 * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_SBU)/(1+crec_SBU), payment='due')
+    }else{
+      va_pension2 <- E2 * axn(TM, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_SBU)/(1+crec_SBU), payment='due')
+      
+    }
+    
+    
     pension <- pension_promedio  
     
-    return(list(va_pension, pension))
+    return(list(va_pension + va_pension1 + va_pension2 , pension))
     
   })
   
   output$VApension <- renderText({
-    paste("El valor actual actuarial de la pensión a otorgarse es: $", round(calcularVApensiones()[[1]],1))
+    paste("El valor actual actuarial de la pensión a otorgarse es: ", round(calcularVApensionesTotal()[[1]],1))
   })
   
   output$cobertura <- renderText({
     paste("Porcentaje con el que debe aportar el Estado Ecuatoriano para cubrir el pago de la pensión del individuo: ", 
-          round(((calcularVApensiones()[[1]]- calcularAhorro())/calcularVApensiones()[[1]])*100,1), '%')
+          round(((calcularVApensionesTotal()[[1]]- calcularAhorroTotal())/calcularVApensionesTotal()[[1]])*100,1), '%')
   })
   
   output$pensionpromedio <- renderText({
-    paste("La pensión promedio obtenida de la base de datos que recibirían es de: $ ", round(calcularVApensiones()[[2]],1))
+    paste("La pensión promedio obtenida de la base de datos que recibirían es de: $ ", 
+          round(pension_promedio_fun(input$edad_jubilacion, (input$edad_jubilacion - input$edad_inicio)*12, input$sexo,  input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio)),1))
   })
-
+  
   output$pension_teorica_actual <- renderText({
     paste("La pensión teórica que recibiría actualmente sin las reformas es: $", 
           round(Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
-          )
+    )
   })
+  
   
   output$pension_teorica_jub <- renderText({
     paste("La pensión teórica que recibiría al momento de su jubilación sin las reformas es: $", 
@@ -180,9 +262,10 @@ server <- function(input, output, session) {
     )
   })
   
+  
   output$tasa_reemplazo <- renderText({
     paste("La tasa de reemplazo es: ", 
-          round( TasaReemplazo(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio)), 2),"%"
+          round( TasaReemplazo(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio)), 2)
     )
   })
   
@@ -201,6 +284,7 @@ server <- function(input, output, session) {
     crec_pensiones <- 1.8261/100; crec_pensiones_12 <- (1+crec_pensiones)^(1/12)-1
     
     interes <- input$interes /100 # 6.2500 /100 #tasa actuarial
+    i_12 <- (1+interes)^(1/12) - 1
     
     crec_salarios <- 0.02154; crec_salarios_12 <- (1+crec_salarios)^(1/12)-1 #superiodal
     
@@ -222,16 +306,17 @@ server <- function(input, output, session) {
     )
     
     
+    
     for (j in c(1:num_anios)) {
       
-      ev_res[j,3] <-  VSn(C = (salario_ini * IVM ) * annuity(i = crec_salarios_12, n=12, type = "due"),
+      ev_res[j,3] <-  VSn(C = (salario_ini * IVM ) * annuity(i = i_12, n=12, type = "due"),
                           q = (1+crec_salarios) , 
                           n = j , #años de aporte hasta el momento
                           i = interes,
                           type = "due")
     }
     
-    # Decrecimiento de la reserv ( pensiones ) -------------------------------------
+    # Decrecimiento de la reserva ( pensiones ) -------------------------------------
     
     pen <- Pension(edad_inicio, salario_ini, num_anios)[[1]]
     
@@ -249,9 +334,9 @@ server <- function(input, output, session) {
       m = 12
       i = crec_pensiones
       if(sexo == "M"){
-        ev_res2[j,3] <-  ev_res[nrow(ev_res),3] - pen*12*axn(TH,x=x,n=n,i=i,payment = "due")- ((m-1)/(2*m))*(1-Exn(TH,x=x,n=n,i=i))
+        ev_res2[j,3] <-  ev_res[nrow(ev_res),3] - pen*12*(axn(TH,x=x,n=n,i=i,payment = "due")- ((m-1)/(2*m))*(1-Exn(TH,x=x,n=n,i=i)))
       }else{
-        ev_res2[j,3] <-  ev_res[nrow(ev_res),3] - pen*12*axn(TM,x=x,n=n,i=i,payment = "due")- ((m-1)/(2*m))*(1-Exn(TM,x=x,n=n,i=i))
+        ev_res2[j,3] <-  ev_res[nrow(ev_res),3] - pen*12*(axn(TM,x=x,n=n,i=i,payment = "due")- ((m-1)/(2*m))*(1-Exn(TM,x=x,n=n,i=i)))
       }
       
       
@@ -331,31 +416,58 @@ server <- function(input, output, session) {
       return(i + input$edad_jubilacion)
   }
 
+  # output$deficit_porcentaje <- renderHighchart({
+  #     y <- c()
+  #     for (k in 0:40){
+  #       y <- c(y , fun_anio_deficit(calcularAhorroTotal(), calcularVApensionesTotal()[[1]] ,calcularVApensionesTotal()[[2]] , k))
+  #     }
+  # 
+  #     data <- data.frame(
+  #       porcentaje = seq(0, 40, by = 1),
+  #       anio = y
+  #     )
+  # 
+  #     # Crear gráfico de Highcharts
+  #     data %>% 
+  #       hchart(., 
+  #              type = "line",styled = TRUE,
+  #              name= 'Edad del jubilado',
+  #              hcaes(x = porcentaje, 
+  #                    y = anio)) %>% 
+  #       hc_title(text = "Impacto del Porcentaje de Aportación del Estado en la Sostenibilidad de las Pensiones") %>% 
+  #       hc_subtitle(text = "Edad del jubilado al agotarse los recursos para el pago de su pensión según el porcentaje de aporte del Estado") %>% 
+  #       hc_xAxis(title = list(text = "Porcentaje de Aportación del Estado")) %>%  
+  #       hc_yAxis(title = list(text = "Edad del jubilado donde se alcanza el déficit")) %>% 
+  #       hc_add_theme(hc_theme_elementary()) 
+  # })
+  
   output$deficit_porcentaje <- renderHighchart({
-      y <- c()
-      for (k in 0:40){
-        y <- c(y , fun_anio_deficit(calcularAhorro(), calcularVApensiones()[[1]] ,calcularVApensiones()[[2]] , k))
-      }
-  
-      data <- data.frame(
-        x = seq(0, 40, by = 1),
-        y = y
-      )
-  
-      # Crear gráfico de Highcharts
-      data %>% 
-        hchart(., 
-               type = "line",styled = TRUE,
-               name= 'Edad del jubilado',
-               hcaes(x = x, 
-                     y = y)) %>% 
-        hc_title(text = "Impacto del Porcentaje de Aportación del Estado en la Sostenibilidad de las Pensiones") %>% 
-        hc_subtitle(text = "Edad del jubilado al agotarse los recursos para el pago de su pensión según el porcentaje de aporte del Estado") %>% 
-        hc_xAxis(title = list(text = "Porcentaje de Aportación del Estado")) %>%  
-        hc_yAxis(title = list(text = "Edad del jubilado donde se alcanza el déficit")) %>% 
-        hc_add_theme(hc_theme_elementary()) 
+    y <- c()
+    for (k in 0:40){
+      y <- c(y , fun_anio_deficit(calcularAhorroTotal(), calcularVApensionesTotal()[[1]] ,calcularVApensionesTotal()[[2]] , k))
+    }
+    
+    data <- data.frame(
+      anio = y,
+      porcentaje = seq(0, 40, by = 1)
+    )
+    
+    # Crear gráfico de Highcharts
+    data %>% 
+      hchart(., 
+             type = "line", 
+             name= 'Porcentaje de Aportación del Estado',
+             hcaes(x = anio, 
+                   y = porcentaje)) %>% 
+      hc_title(text = "Impacto del Porcentaje de Aportación del Estado en la Sostenibilidad de las Pensiones") %>% 
+      hc_subtitle(text = "Edad del jubilado al agotarse los recursos para el pago de su pensión según el porcentaje de aporte del Estado") %>% 
+      hc_xAxis(title = list(text = "Edad del jubilado donde se alcanza el déficit")) %>%  
+      hc_yAxis(title = list(text = "Porcentaje de Aportación del Estado")) %>% 
+      hc_add_theme(hc_theme_elementary()) %>%
+      hc_tooltip(pointFormat = 'Edad del jubilado: {point.x}<br>Porcentaje de Aportación del Estado: {point.y}') 
   })
-
+  
+  
 
   # Graficos interactivos para primeros resultados
   
@@ -395,8 +507,8 @@ server <- function(input, output, session) {
 
   output$porc_cobertura <- renderHighchart({
   
-  porc_estado <- round(((calcularVApensiones()[[1]]- calcularAhorro())/calcularVApensiones()[[1]])*100,1)
-  vaa_prestacion <- round(calcularVApensiones()[[1]],1)
+  porc_estado <- round(((calcularVApensionesTotal()[[1]]- calcularAhorroTotal())/calcularVApensionesTotal()[[1]])*100,1)
+  vaa_prestacion <- round(calcularVApensionesTotal()[[1]],1)
   vaa_prestacion_estado <- vaa_prestacion*(porc_estado/100)
   vaa_prestacion_iess <- vaa_prestacion*(1-(porc_estado/100))
   
@@ -435,10 +547,10 @@ server <- function(input, output, session) {
     )) %>%
     hc_series(list(
       name = "Ahorros totales del Individuo",
-      data = list(round(calcularAhorro(),1))
+      data = list(round(calcularAhorroTotal(),1))
     ), list(
       name = "Valor Actual Actuarial de las prestaciones",
-      data = list(round(calcularVApensiones()[[1]],1))
+      data = list(round(calcularVApensionesTotal()[[1]],1))
     ))
 })
 
@@ -459,7 +571,7 @@ server <- function(input, output, session) {
       )) %>%
       hc_series(list(
         name = "Pensión Promedio",
-        data = list(round(calcularVApensiones()[[2]],1))
+        data = list( round(pension_promedio_fun(input$edad_jubilacion, (input$edad_jubilacion - input$edad_inicio)*12, input$sexo,  input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio)),1))
       ), list(
         name = "Pensión del Individuo",
         data = list(round(Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2))
@@ -474,9 +586,7 @@ server <- function(input, output, session) {
     
     IVM <- 0.1106 
     crec_salarios <- 0.02154
-    salario0 <- salario *(1+ crec_salarios)^(- anio_inicio + (2024 - anios_aporte))
-    
-    
+    salario0 <- salario
     
     # Calculo del ahorro de un afiliado hasta su jubilación
     i_12 <- (1+interes)^(1/12) - 1
@@ -496,8 +606,6 @@ server <- function(input, output, session) {
     inflacion <- inflacion / 100 
     interes <- interes /100
     crec_salarios <- 0.02154
-    salario <- salario *(1+ crec_salarios)^(-anio_inicio + (2024 - anios_aporte))
-    #Cálculo de la pensión promedio
     
     pension_promedio <- Pension(edad_inicio, salario , (edad_jubilacion - edad_inicio))[[1]]
     
