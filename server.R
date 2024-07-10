@@ -1,4 +1,3 @@
-# soy ammy
 library(shiny)
 library(lubridate)
 library(lifecontingencies)
