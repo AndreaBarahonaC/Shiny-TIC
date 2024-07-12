@@ -1,4 +1,3 @@
-# soy ammy
 library(shiny)
 library(lubridate)
 library(lifecontingencies)
@@ -758,9 +757,9 @@ server <- function(input, output, session) {
     
     # Generación de la tabla con kableExtra
     kbl(tabla) %>%
-      kable_styling(bootstrap_options = "hover",position = "center") %>%
-      row_spec(0, bold = TRUE,color="white", background = "#3e3f3a") %>%
-      scroll_box(width = "900px", height = "400px")
+      kable_styling(bootstrap_options = "hover", position = "center", full_width = F) %>%
+      row_spec(0, bold = F, color = "white", background = "#3e3f3a", font_size = 10) #%>%
+    #scroll_box(height = "600px")
     
   }
 
