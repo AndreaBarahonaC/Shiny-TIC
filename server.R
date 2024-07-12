@@ -20,28 +20,55 @@ server <- function(input, output, session) {
   crec_SBU <- 0.02534
   rango_valores_min <- reactive({
     rango_valores_min <- list(
-      list(rango = c(0, 10 * 12), valor_punto = 230*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(11 * 12, 20 * 12), valor_punto = 276*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(21 * 12, 30 * 12), valor_punto = 322*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(31 * 12, 35 * 12), valor_punto = 368*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(36 * 12, 39 * 12), valor_punto = 414*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(40 * 12, Inf), valor_punto = 460*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024))
+      list(rango = c(0, 10 * 12), valor_punto = 230*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(11 * 12, 20 * 12), valor_punto = 276*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(21 * 12, 30 * 12), valor_punto = 322*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(31 * 12, 35 * 12), valor_punto = 368*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(36 * 12, 39 * 12), valor_punto = 414*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(40 * 12, Inf), valor_punto = 460*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1))
     )
     return(rango_valores_min)
   })
   
   rango_valores_max <- reactive({
     rango_valores_max <- list(
-      list(rango = c(0, 10 * 12), valor_punto = 1150*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(15 * 12, 19 * 12), valor_punto = 1380*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(20 * 12, 24 * 12), valor_punto = 1610*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(25 * 12, 29 * 12), valor_punto = 1840*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(30 * 12, 34 * 12), valor_punto = 2070*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(35 * 12, 39 * 12), valor_punto = 2300*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024)),
-      list(rango = c(4 * 120, Inf), valor_punto = 2530*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024))
+      list(rango = c(0, 10 * 12), valor_punto = 1150*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(15 * 12, 19 * 12), valor_punto = 1380*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(20 * 12, 24 * 12), valor_punto = 1610*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(25 * 12, 29 * 12), valor_punto = 1840*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(30 * 12, 34 * 12), valor_punto = 2070*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(35 * 12, 39 * 12), valor_punto = 2300*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1)),
+      list(rango = c(4 * 120, Inf), valor_punto = 2530*(1+crec_SBU)^((input$anio_inicio + input$edad_jubilacion - input$edad_inicio)- 2024-1))
     )
     return(rango_valores_max)
   })
+  
+  rango_valores_min_A <- reactive({
+    rango_valores_min <- list(
+      list(rango = c(0, 10 * 12), valor_punto = 230),
+      list(rango = c(11 * 12, 20 * 12), valor_punto = 276),
+      list(rango = c(21 * 12, 30 * 12), valor_punto = 322),
+      list(rango = c(31 * 12, 35 * 12), valor_punto = 368),
+      list(rango = c(36 * 12, 39 * 12), valor_punto = 414),
+      list(rango = c(40 * 12, Inf), valor_punto = 460)
+    )
+    return(rango_valores_min)
+  })
+  
+  rango_valores_max_A <- reactive({
+    rango_valores_max <- list(
+      list(rango = c(0, 10 * 12), valor_punto = 1150),
+      list(rango = c(15 * 12, 19 * 12), valor_punto = 1380),
+      list(rango = c(20 * 12, 24 * 12), valor_punto = 1610),
+      list(rango = c(25 * 12, 29 * 12), valor_punto = 1840),
+      list(rango = c(30 * 12, 34 * 12), valor_punto = 2070),
+      list(rango = c(35 * 12, 39 * 12), valor_punto = 2300),
+      list(rango = c(4 * 120, Inf), valor_punto = 2530)
+    )
+    return(rango_valores_max)
+  })
+  
+  
   
   Pension <- function(edad, salario, anios_aporte){
     
@@ -60,6 +87,27 @@ server <- function(input, output, session) {
     
     pension <- ajustar_pension_min(anios_aporte*12, pension, rango_valores_min())
     pension <- ajustar_pension_max(anios_aporte*12, pension, rango_valores_max())
+    
+    return(list(pension, prom))
+  }
+  
+  PensionActual <- function(edad, salario, anios_aporte){
+    
+    incremento <- 0.025339 
+    
+    # Creamos un vector con los últimos 5 mejores salarios 
+    mejores_5_salarios <- sapply(1:5, function(i) {
+      salario * (1 + incremento)^(anios_aporte - i)
+    })
+    
+    # pension = promedio * coef
+    prom <- sum(mejores_5_salarios) / 5
+    coef <- Coeficiente$Coef[Coeficiente$An.Imposiciones == anios_aporte]
+    
+    pension <- prom * coef 
+    
+    pension <- ajustar_pension_min(anios_aporte*12, pension, rango_valores_min_A())
+    pension <- ajustar_pension_max(anios_aporte*12, pension, rango_valores_max_A())
     
     return(list(pension, prom))
   }
@@ -105,7 +153,7 @@ server <- function(input, output, session) {
     # Calculo del ahorro de un afiliado hasta su jubilación
     i_12 <- (1+interes)^(1/12) - 1
     
-    Ahorro <- VSn(C = (salario0 * IVM) * annuity(i = i_12, n=12, type = "due"),
+    Ahorro <- VSn(C = (salario0 * IVM) * annuity(i = i_12, n=12, type = "immediate"),
                   q = (1+crec_salarios) , 
                   n = anios_aporte, 
                   i = interes,
@@ -151,10 +199,29 @@ server <- function(input, output, session) {
   # establecimiento minimo y maximo de pensiones
   
   pensiones2 <- pensiones2 %>%  mutate( prom_salario_a_usar = promedio_sueldo_real *(1.02154)^(2024 - as.numeric(format(as.Date(fecha_inicial_pension, '%Y %m %d'), "%Y"))), .before=promedio_sueldo_real)
-  pensiones2 <- pensiones2 %>%  mutate(pension_final1 = pension_final *( 1.018261)^(2024 - as.numeric(format(as.Date(fecha_inicial_pension, '%Y %m %d'), "%Y"))), .before=pension_final)
+  pensiones2 <- pensiones2 %>%  mutate(pension_final1 = pension_final *( 1.018261)^(5), .before=pension_final)
   
   pensiones2 <- pensiones2 %>% mutate(pensionesfinal2 = pension_final1)
   pensiones2 <- pensiones2 %>% dplyr::filter(tipo_seguro != 'SC')
+  pensiones2 <- pensiones2 %>% dplyr::filter(estado_vigencia=="A")
+  
+  pensiones2 <- pensiones2 %>%
+    mutate(pensionesfinal2 = case_when(
+      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 < 230, 230, pensionesfinal2),
+      11 * 12 <= numero_imposiciones & numero_imposiciones <= 20 * 12 ~ ifelse(pensionesfinal2 < 276, 276, pensionesfinal2),
+      21 * 12 <= numero_imposiciones & numero_imposiciones <= 30 * 12 ~ ifelse(pensionesfinal2 < 322, 322, pensionesfinal2),
+      31 * 12 <= numero_imposiciones & numero_imposiciones <= 35 * 12 ~ ifelse(pensionesfinal2 < 368, 368, pensionesfinal2),
+      36 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 < 414, 414, pensionesfinal2),
+      40 * 12 <= numero_imposiciones ~ ifelse(pensionesfinal2 < 460, 460, pensionesfinal2),
+      0 <= numero_imposiciones & numero_imposiciones <= 10 * 12 ~ ifelse(pensionesfinal2 > 1150, 1150, pensionesfinal2),
+      15 * 12 <= numero_imposiciones & numero_imposiciones <= 19 * 12 ~ ifelse(pensionesfinal2 > 1380, 1380, pensionesfinal2),
+      20 * 12 <= numero_imposiciones & numero_imposiciones <= 24 * 12 ~ ifelse(pensionesfinal2 > 1610, 1610, pensionesfinal2),
+      25 * 12 <= numero_imposiciones & numero_imposiciones <= 29 * 12 ~ ifelse(pensionesfinal2 > 1840, 1840, pensionesfinal2),
+      30 * 12 <= numero_imposiciones & numero_imposiciones <= 34 * 12 ~ ifelse(pensionesfinal2 > 2070, 2070, pensionesfinal2),
+      35 * 12 <= numero_imposiciones & numero_imposiciones <= 39 * 12 ~ ifelse(pensionesfinal2 > 2300, 2300, pensionesfinal2),
+      4 * 120 <= numero_imposiciones ~ ifelse(pensionesfinal2 > 2530, 2530, pensionesfinal2),
+      TRUE ~ pensionesfinal2
+    ))
   
   
   
@@ -167,7 +234,8 @@ server <- function(input, output, session) {
       dplyr::filter(impo + 24 >= numero_imposiciones &  numero_imposiciones >= ((minimo(input$edad_inicio) - input$edad_inicio)*12) ) %>% 
       dplyr::filter(sexo == sexo1) %>% 
       mutate(prom_salario_a_usar1 = ifelse(prom_salario_a_usar ==0, mean(pensiones2$prom_salario_a_usar[pensiones2$prom_salario_a_usar !=0]),prom_salario_a_usar)) %>% 
-      dplyr::filter( Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]] - 300 <= prom_salario_a_usar1 & prom_salario_a_usar1 <= Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]]+100)
+      dplyr::filter( Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]] - 200 <= prom_salario_a_usar1 & prom_salario_a_usar1 <= Pension(input$edad_inicio, sal_ini, anios_aporte)[[2]]+200)
+      #dplyr::filter( mean(sal_ini*(1+ 0.02154)^(seq(0, anios_aporte, by=1))) - 200 <= prom_salario_a_usar1 & prom_salario_a_usar1 <= mean(sal_ini*(1+ 0.02154)^(seq(0, anios_aporte, by=1)))+ 200)
       #-300, -400
     
     prom <- mean(res$pensionesfinal2)
@@ -180,8 +248,10 @@ server <- function(input, output, session) {
   calcularVApensionesTotal <- reactive({
     SBU <- 460
     sexo <- input$sexo
+    
     edad_inicio <- input$edad_inicio
     edad_jubilacion <- input$edad_jubilacion
+    anio_fin <- input$anio_inicio + (edad_jubilacion-edad_inicio)
     n_pensiones <- 100 - edad_jubilacion # 100 años de edad como límite
     anios_aporte <- edad_jubilacion-edad_inicio
     crec_pensiones <- 1.8261/100
@@ -213,7 +283,7 @@ server <- function(input, output, session) {
       
     }
     
-    E2 <- SBU * (1 + i_12)^(-11)
+    E2 <- SBU * (1+ crec_SBU)^(anio_fin - 2024) * (1 + i_12)^(-11) 
     if(sexo == 'M'){
       va_pension2 <- E2 * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_SBU)/(1+crec_SBU), payment='due')
     }else{
@@ -244,7 +314,7 @@ server <- function(input, output, session) {
   
   output$pension_teorica_actual <- renderText({
     paste("La pensión teórica que recibiría actualmente sin las reformas es: $", 
-          round(Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
+          round(PensionActual(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
     )
   })
   
@@ -394,12 +464,12 @@ server <- function(input, output, session) {
 
   fun_anio_deficit<- function (ahorro, va_pensiones, pension_inicial, porcentaje_estado){
 
-      ahorro <- ahorro + (porcentaje_estado/100)* va_pensiones
+      ahorro <- ahorro 
       crec_pensiones <- 1.8261/100
       interes <- input$interes/100
       i_12 <- (1+(input$interes/100))^(1/12) - 1
 
-      pension <- pension_inicial * annuity(i = i_12, n=12, type = "due")
+      pension <- pension_inicial * (1-porcentaje_estado/100) * annuity(i = i_12, n=12, type = "due") 
       i <- 1
 
       while((ahorro - pension) > 0){
@@ -415,6 +485,7 @@ server <- function(input, output, session) {
       return(i + input$edad_jubilacion)
   }
 
+  #15 77
   # output$deficit_porcentaje <- renderHighchart({
   #     y <- c()
   #     for (k in 0:40){
