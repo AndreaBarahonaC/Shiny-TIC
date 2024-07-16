@@ -13,6 +13,14 @@ suppressMessages(suppressWarnings(library(kableExtra)))
 suppressMessages(suppressWarnings(library(ggplot2)))
 suppressMessages(suppressWarnings(library(scales)))
 
+# Salarios Básicos Unificados Ecuador ---
+crec_SBU <- 2.5339/100;
+sbu <- data.frame(anio = seq(1995, 2070, by=1),
+                  sbu = c(56.65, 56.65, 56.65, 56.65, 56.65, 56.65,
+                          85.65, 104.88, 121.91,135.63, 150, 160, 170, 200,
+                          218, 240, 264, 292, 318, 340, 354, 366, 375, 
+                          386, 394, 400, 400, 425, 450, 460, sapply(1:46, function(x) 460*(1+ crec_SBU)^(x)) ))
+
 # Tasas ----
 crec_pensiones <- 1.8261/100; crec_pensiones_12 <- (1+crec_pensiones)^(1/12)-1
 i_actuarial <- 6.2500 /100 #tasa actuarial
