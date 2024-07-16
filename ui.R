@@ -1,39 +1,26 @@
-library(shiny)
-library(lubridate)
-library(lifecontingencies)
-library(openxlsx)
-library(readxl)
-library(tidyverse)
-library(data.table)
-library(shinythemes)
-library(highcharter)
-library(shinydashboard)
-library(DT)
-library(kableExtra)
-library(ggplot2)
-
-
+suppressMessages(suppressWarnings(library(shiny)))
+suppressMessages(suppressWarnings(library(lubridate)))
+suppressMessages(suppressWarnings(library(lifecontingencies)))
+suppressMessages(suppressWarnings(library(openxlsx)))
+suppressMessages(suppressWarnings(library(readxl)))
+suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(data.table)))
+suppressMessages(suppressWarnings(library(shinythemes)))
+suppressMessages(suppressWarnings(library(shinydashboard)))
+suppressMessages(suppressWarnings(library(shinyWidgets)))
+suppressMessages(suppressWarnings(library(highcharter)))
+suppressMessages(suppressWarnings(library(DT)))
+suppressMessages(suppressWarnings(library(kableExtra)))
+suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(scales)))
 
 # cerulean, cosmo, cyborg, darkly, flatly, journal, 
 # lumen, paper, readable, sandstone, simplex, slate, 
 # spacelab, superhero, united, yeti.
 
 ui <- fluidPage(
+  useShinydashboard(),
   theme = shinytheme("paper"),
-  tags$head(
-    tags$style(HTML("
-      .box {
-        border: 0.5px solid #3e3f3a; /* Bordes de las cajas */
-        padding: 5px; /* Espaciado interno */
-        margin-bottom: 5px; /* Espaciado entre cajas */
-        border-radius: 5px; /* Bordes redondeados */
-      }
-      .box-title {
-        font-size: 2px; /* Tamaño del título */
-        font-weight: bold; /* Negrita para el título */
-      }
-    "))
-  ),
   
   fluidRow(
     column(3, img(src = "logo_epn.png", height = "100px", align = "right")),
@@ -49,7 +36,7 @@ ui <- fluidPage(
   br(),
   
   tabPanel(
-    "Análisis General",
+    "TIC",
     fluidRow(
       column(2,
              wellPanel(
@@ -66,57 +53,59 @@ ui <- fluidPage(
       column(10, 
              tabsetPanel(
                tabPanel(
-                 "Cálculo de Ahorro",
+                 "Sistema Actual",
+                 fluidRow(
+                   infoBoxOutput("ahorro", width = 3),
+                   infoBoxOutput("Naportes", width = 3),
+                   infoBoxOutput("tasa_reemplazo", width = 3),
+                   infoBoxOutput("cobertura", width = 3)
+                 ),
+                 fluidRow(
+                   infoBoxOutput('VApension', width = 3),
+                   infoBoxOutput("pensionpromedio", width = 3),
+                   infoBoxOutput("pension_teorica_actual", width = 3),
+                   infoBoxOutput("pension_teorica_jub", width = 3)
+                 ),
                  fluidRow(
                    column(6,
+                          highchartOutput("evolucion_reservas_con_aporte", height = "300px"),
                           highchartOutput("deficit_porcentaje", height = "300px"),
-                          highchartOutput("evolucion_reservas", height = "300px"),
-                          fluidRow(
-                            column(6, highchartOutput("penprom_vs_penind", height = "300px")),
-                            column(6,  highchartOutput("ahorros_vs_prestaciones", height = "300px"))
-                          )
                    ),
                    column(6,
                           fluidRow(
                             column(6, highchartOutput("tiempo_sss", height = "300px")),
                             column(6, highchartOutput("porc_cobertura", height = "300px"))
                           ),
-                          tableOutput("tabla_pensiones"),
+                          fluidRow(
+                            column(6, highchartOutput("penprom_vs_penind", height = "300px")),
+                            column(6,  highchartOutput("ahorros_vs_prestaciones", height = "300px"))
+                          )
                    )
                  ),
                  fluidRow(
-                   column(4,
-                          box(title = tags$h4("Ahorro hasta el momento de la jubilación"), status = "primary", solidHeader = TRUE, width = 12,
-                              textOutput("ahorro")),
-                          box(title = tags$h4("Cobertura del Estado"), status = "danger", solidHeader = TRUE, width = 12,
-                              textOutput("cobertura")),
-                          box(title = tags$h4("Tasa de Reemplazo"), status = "warning", solidHeader = TRUE, width = 12,
-                              textOutput("tasa_reemplazo"))
-                   ),
-                   column(4,
-                          box(title = tags$h4("Años Aportados"), status = "info", solidHeader = TRUE, width = 12,
-                              textOutput("Naportes")),
-                          box(title = tags$h4("Pensión Teórica Actual"), status = "primary", solidHeader = TRUE, width = 12,
-                              textOutput("pension_teorica_actual")),
-                          box(title = tags$h4("Pensión Teórica a la Jubilación"), status = "info", solidHeader = TRUE, width = 12,
-                              textOutput("pension_teorica_jub"))
-                   ),
-                   column(4,
-                          box(title = tags$h4("Pensión Promedio Actual"), status = "success", solidHeader = TRUE, width = 12,
-                              textOutput("pensionpromedio")),
-                          box(title = tags$h4("Valor de la Pensión al momento de la jubilación"), status = "warning", solidHeader = TRUE, width = 12,
-                              textOutput("VApension")),
-                          box(title = tags$h4("Pensión Teórica a la Jubilación (Opción 2)"), status = "success", solidHeader = TRUE, width = 12,
-                              textOutput("pension_teorica_jub_o"))
-                   )
+                   tableOutput("tabla_pensiones")
                  )
                ),
                
+               
                tabPanel(
-                 "Análisis Andrea Barahona",
+                 "Reforma Andrea Barahona",
                  fluidPage(
-                   h3("Explicación Ley"),
-                   p("Aquí puedes agregar más funcionalidades o información adicional.")
+                   h4("Reforma: Cálculo en la fórmula de cálculo de la pensión por vejez"),
+                   p("Según el Art 199 del Cap. 6 del Anteproyecto de Ley, a partir de la fecha de publicación de la Ley de Pensiones y Ahorro para la 
+                     Vejez que reforma la presente Ley de Seguridad Social, la cuantía para el cálculo de la pensión de jubilación 
+                     se basará en el promedio mensual de los seis mejores años de ingresos que el afiliado haya aportado, y se incrementará gradualmente
+                     a razón de un año por cada año posterior a la reforma hasta alzcanzar un promedio mensual de los 30 mejores años."),
+                   
+                   fluidRow(column(6,
+                                   tableOutput("tabla_pensiones_reformaABC")
+                   ),
+                   column(6,
+                          sliderInput("anios_calculo_pension", "Seleccione el número de años considerados para el cálculo de la pensión (años):", value = 15, max = 30, min = 5),
+                          highchartOutput("evolucion_reservas_con_aporte_sin_reforma", height = "300px"),
+                          highchartOutput("evolucion_reservas_con_aporte_con_reforma", height = "300px"),
+                   )
+                   )
                  )
                ),
                
