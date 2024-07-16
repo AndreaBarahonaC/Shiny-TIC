@@ -1,0 +1,64 @@
+Var1,Var2,Freq
+"",   edad_hoy,Min.   : 61.00  
+"",   edad_hoy,1st Qu.: 70.00  
+"",   edad_hoy,Median : 75.00  
+"",   edad_hoy,Mean   : 76.71  
+"",   edad_hoy,3rd Qu.: 82.00  
+"",   edad_hoy,Max.   :108.00  
+"",   edad_hoy,
+"",edad_jubilacion,Min.   :47.00  
+"",edad_jubilacion,1st Qu.:61.00  
+"",edad_jubilacion,Median :65.00  
+"",edad_jubilacion,Mean   :66.65  
+"",edad_jubilacion,3rd Qu.:70.00  
+"",edad_jubilacion,Max.   :99.00  
+"",edad_jubilacion,
+"",promedio_sueldo_real,Min.   :   0.00  
+"",promedio_sueldo_real,1st Qu.:  61.76  
+"",promedio_sueldo_real,Median : 310.66  
+"",promedio_sueldo_real,Mean   : 484.35  
+"",promedio_sueldo_real,3rd Qu.: 783.54  
+"",promedio_sueldo_real,Max.   :8826.63  
+"",promedio_sueldo_real,
+"",numero_imposiciones_totales,Min.   : 60.0  
+"",numero_imposiciones_totales,1st Qu.:198.0  
+"",numero_imposiciones_totales,Median :360.0  
+"",numero_imposiciones_totales,Mean   :324.4  
+"",numero_imposiciones_totales,3rd Qu.:436.0  
+"",numero_imposiciones_totales,Max.   :748.0  
+"",numero_imposiciones_totales,
+"",valor_acumulado,Min.   :    0.0  
+"",valor_acumulado,1st Qu.:  367.5  
+"",valor_acumulado,Median :  707.9  
+"",valor_acumulado,Mean   : 1041.2  
+"",valor_acumulado,3rd Qu.: 1207.8  
+"",valor_acumulado,Max.   :77543.9  
+"",valor_acumulado,NA's   :5078  
+"",coeficiente_real,Min.   :0.0000  
+"",coeficiente_real,1st Qu.:0.6625  
+"",coeficiente_real,Median :0.7750  
+"",coeficiente_real,Mean   :0.7850  
+"",coeficiente_real,3rd Qu.:0.9430  
+"",coeficiente_real,Max.   :1.2750  
+"",coeficiente_real,
+"",valor_pension_concedida,Min.   :   0.00  
+"",valor_pension_concedida,1st Qu.:  82.15  
+"",valor_pension_concedida,Median : 240.00  
+"",valor_pension_concedida,Mean   : 412.54  
+"",valor_pension_concedida,3rd Qu.: 648.38  
+"",valor_pension_concedida,Max.   :2200.00  
+"",valor_pension_concedida,
+"",fecha_derecho,Min.   :1969-08-01  
+"",fecha_derecho,1st Qu.:2009-04-01  
+"",fecha_derecho,Median :2014-06-01  
+"",fecha_derecho,Mean   :2012-03-17  
+"",fecha_derecho,3rd Qu.:2017-08-01  
+"",fecha_derecho,Max.   :2021-01-01  
+"",fecha_derecho,
+"",fecha_inicial_pension,Min.   :1996-09-22  
+"",fecha_inicial_pension,1st Qu.:2011-05-24  
+"",fecha_inicial_pension,Median :2014-06-01  
+"",fecha_inicial_pension,Mean   :2014-05-22  
+"",fecha_inicial_pension,3rd Qu.:2017-08-21  
+"",fecha_inicial_pension,Max.   :2021-01-01  
+"",fecha_inicial_pension,
