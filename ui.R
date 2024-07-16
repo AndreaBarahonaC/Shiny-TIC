@@ -120,8 +120,24 @@ ui <- fluidPage(
                tabPanel(
                  "Análisis Ammy Párraga",
                  fluidPage(
-                   h3("Explicación Ley"),
-                   p("Aquí puedes agregar más funcionalidades o información adicional.")
+                   h4("Reforma: Cotización sobre el décimo tercer y cuarto sueldo."),
+                   p("Según el Art. 182 del Capítulo Uno (ÁMBITO DE APLICACIÓN, RECURSOS, REQUISITOS Y PRESTACIONES) del Anteproyecto de Ley,
+                     la aportación obligatoria que corresponde al afiliado con relación de dependencia, equivalente al 11,06% sobre su remuneración imponible,
+                     la misma que se consignará del siguiente modo: la aportación patronal obligatoria equivalente al 4,42%, más la aportación personal
+                     obligatoria del trabajador afiliado equivalente al 6,64%. Esta aportación obligatoria del 11,06%, deberá hacerse también sobre el décimo tercer sueldo y el décimo cuarto sueldo. "
+                     ),
+                   # fluidRow(
+                   #   infoBoxOutput("ahorro", width = 3),
+                   #   infoBoxOutput("Naportes", width = 3),
+                   #   infoBoxOutput("tasa_reemplazo", width = 3),
+                   #   infoBoxOutput("cobertura", width = 3)
+                   # ),
+                   # fluidRow(
+                   #   infoBoxOutput('VApension', width = 3),
+                   #   infoBoxOutput("pensionpromedio", width = 3),
+                   #   infoBoxOutput("pension_teorica_actual", width = 3),
+                   #   infoBoxOutput("pension_teorica_jub", width = 3)
+                   # ),
                  )
                )
              )
