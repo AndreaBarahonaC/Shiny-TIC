@@ -1067,6 +1067,102 @@ server <- function(input, output, session) {
     
     return(list(pension, prom))
   }
+  PensionActual_reforma <- function(edad, salario, anios_aporte, anios_prom){
+    
+    if(salario < sbu$sbu[sbu$anio==input$anio_inicio]){
+      salario <- sbu$sbu[sbu$anio==input$anio_inicio]
+      incremento <-2.5339/100
+    }else{
+      incremento <- 0.02154
+    }  
+    
+    if (anios_prom <= anios_aporte){
+      mejores_n_salarios <- sapply(1:anios_prom, function(i) {
+        salario * (1 + incremento)^(anios_aporte - i)
+      })
+      prom <- sum(mejores_n_salarios) / anios_prom
+    }
+    else{
+      mejores_n_salarios <- sapply(1:anios_aporte, function(i) {
+        salario * (1 + incremento)^(anios_aporte - 1)
+      })
+      prom <- sum(mejores_n_salarios) / anios_aporte
+    }
+    
+    coef <- Coeficiente$Coef[Coeficiente$An.Imposiciones == anios_aporte]
+    
+    pension <- prom * coef 
+    
+    pension <- ajustar_pension_min(anios_aporte*12, pension, rango_valores_min_A())
+    pension <- ajustar_pension_max(anios_aporte*12, pension, rango_valores_max_A())
+    
+    return(list(pension, prom))
+  }
+  TasaReemplazo_reforma <- function(edad, salario, anios_aporte, anios_prom){
+    
+    if(salario < sbu$sbu[sbu$anio==input$anio_inicio]){
+      salario <- sbu$sbu[sbu$anio==input$anio_inicio]
+      incremento <-2.5339/100
+    }else{
+      incremento <- 0.02154
+    }
+    
+    pension <- Pension_reforma(edad, salario, anios_aporte, anios_prom)[[1]]
+    ultimo_sueldo <- salario * (1+incremento)^(anios_aporte - 1)
+    
+    tasa <- (pension / ultimo_sueldo) * 100
+    if(tasa >= 100){
+      tasa <- 100
+    }
+    return(tasa)
+  }
+  VApensionesTotal_reforma <- function(sexo, edad_inicio, edad_jubilacion, anio_inicio, inflacion, interes, salario, anios_prom){
+    SBU <- 460
+    
+    anio_fin <- anio_inicio + (edad_jubilacion-edad_inicio)
+    n_pensiones <- 100 - edad_jubilacion # 100 años de edad como límite
+    anios_aporte <- edad_jubilacion-edad_inicio
+    crec_pensiones <- 1.8261/100
+    inflacion <- inflacion / 100 
+    interes <-  interes/100
+    crec_salarios <- 0.02154
+    crec_SBU <- 0.02534
+    
+    #Cálculo de la pensión promedio
+    pension_promedio <- Pension_reforma(edad_inicio, salario, (edad_jubilacion - edad_inicio), anios_prom)[[1]]
+    
+    # Calculo del VA de la pension
+    i_12 <- (1+interes)^(1/12) - 1
+    
+    C <- pension_promedio* annuity(i = i_12, n=12, type = "due") 
+    if(sexo == 'M'){
+      va_pension <- C * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
+    }else{
+      va_pension <- C * axn(TM, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
+      
+    }
+    
+    E1 <- pension_promedio * (1 + i_12)^(-11)
+    if(sexo == 'M'){
+      va_pension1 <- E1 * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
+    }else{
+      va_pension1 <- E1 * axn(TM, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_pensiones)/(1+crec_pensiones), payment='due')
+      
+    }
+    
+    E2 <- SBU * (1+ crec_SBU)^(anio_fin - 2024) * (1 + i_12)^(-11) 
+    if(sexo == 'M'){
+      va_pension2 <- E2 * axn(TH, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_SBU)/(1+crec_SBU), payment='due')
+    }else{
+      va_pension2 <- E2 * axn(TM, x= edad_jubilacion, n=n_pensiones, i= (interes-crec_SBU)/(1+crec_SBU), payment='due')
+      
+    }
+    
+    
+    pension <- pension_promedio  
+    
+    return(list(va_pension + va_pension1 + va_pension2 , pension))
+  }
   Evolucion_Reservas_fun_reforma <- function(sexo, edad_inicio, edad_jubilacion,salario_ini, anio_inicio, interes, num_prom,aporte = TRUE){
     # Parámetros  
     anio_fin <- anio_inicio + (edad_jubilacion-edad_inicio-1)
@@ -1089,6 +1185,7 @@ server <- function(input, output, session) {
     }else{
       incremento <- 0.02154
     }
+    
     for (j in c(1:num_anios)) {
       ev_res[j,3] <-  VSn(C = (salario_ini * IVM) * annuity(i = i_12, n=12, type = "immediate"),
                           q = (1+incremento) , 
@@ -1176,6 +1273,45 @@ server <- function(input, output, session) {
     
     return(list(edad, reservas))
   }
+  
+  output$tasa_reemplazo_reforma <- renderValueBox({
+    x <-  round( TasaReemplazo_reforma(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio), input$anios_calculo_pension), 2)
+    shinydashboard::infoBox( 
+      value = div(style = "color: white", paste(x,"%")), 
+      title = "Tasa de reemplazo", icon = icon(name = "percent", class = "fa-solid fa-percent"),
+      color = "purple", fill = TRUE
+    )
+  })
+  output$pension_teorica_actual_reforma <- renderValueBox({
+    x <- round(PensionActual_reforma(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio), input$anios_calculo_pension)[[1]], 2)
+    x <- format(x, big.mark = ",", decimal.mark = ".", nsmall=2)
+    shinydashboard::infoBox( 
+      value = div(style = "color: white", paste0("$", x)), 
+      title = div(style = "white-space: normal; word-wrap: break-word; line-height: 1.2;", "Pensión Teoríca Actual"),
+      icon = icon(name = "calculator", class = "fa-solid fa-calculator"),
+      color = "blue", fill = TRUE
+    )
+  })
+  output$pension_teorica_jub_reforma <- renderValueBox({
+    x <- round(Pension_reforma(input$edad_inicio, input$salario , (input$edad_jubilacion - input$edad_inicio), input$anios_calculo_pension)[[1]], 2)
+    x <- format(x, big.mark = ",", decimal.mark = ".", nsmall=2)
+    shinydashboard::infoBox( 
+      value = div(style = "color: white", paste0("$", x)), 
+      title = div(style = "white-space: normal; word-wrap: break-word; line-height: 1.2;", "Pensión Teoríca a la Jubilación"),
+      icon = icon(name = "money-bill-trend-up", class = "fa-solid fa-money-bill-trend-up"),
+      color = "aqua", fill = TRUE
+    )
+  })
+  output$VApension_reforma <- renderValueBox({
+    x <- round(VApensionesTotal_reforma(input$sexo, input$edad_inicio, input$edad_jubilacion, input$anio_inicio,
+                                        input$inflacion, input$interes, input$salario, input$anios_calculo_pension)[[1]],2)
+    x <- format(x, big.mark = ",", decimal.mark = ".", nsmall=2)
+    shinydashboard::infoBox( 
+      value = div(style = "color: white", paste0("$", x)), 
+      title = "VAA de la Pensión", icon = icon(name = "hand-holding-dollar", class = "fa-solid fa-hand-holding-dollar"),
+      color = "teal", fill = TRUE
+    )
+  })
   
   output$tabla_pensiones_reformaABC <- function(){
     # Creación de las columnas
@@ -1267,7 +1403,6 @@ server <- function(input, output, session) {
       ) %>% hc_add_theme(hc_theme_elementary())
   })
   output$evolucion_reservas_con_aporte_con_reforma <- renderHighchart({
-    
     edad <- Evolucion_Reservas_fun_reforma(input$sexo, input$edad_inicio,
                                            input$edad_jubilacion, input$salario,
                                            input$anio_inicio, input$interes,
@@ -1311,8 +1446,6 @@ server <- function(input, output, session) {
         fillOpacity=0.3
       ) %>% hc_add_theme(hc_theme_elementary())
   })
-  
-  
   
   # REFORMA AMMY PARRAGA -------------------------------------------------------
   

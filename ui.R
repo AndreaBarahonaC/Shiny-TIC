@@ -96,13 +96,19 @@ ui <- fluidPage(
                      Vejez que reforma la presente Ley de Seguridad Social, la cuantía para el cálculo de la pensión de jubilación 
                      se basará en el promedio mensual de los seis mejores años de ingresos que el afiliado haya aportado, y se incrementará gradualmente
                      a razón de un año por cada año posterior a la reforma hasta alzcanzar un promedio mensual de los 30 mejores años."),
-                   
+                   fluidRow(
+                     sliderInput("anios_calculo_pension", "Número de años considerados para el cálculo de la pensión (años):", value = 15, max = 30, min = 5)
+                   ),
+                   fluidRow(infoBoxOutput("tasa_reemplazo_reforma", width = 3),  
+                            infoBoxOutput("pension_teorica_actual_reforma", width = 3),
+                            infoBoxOutput("pension_teorica_jub_reforma", width = 3),
+                            infoBoxOutput('VApension_reforma', width = 3)
+                   ),
                    fluidRow(column(6,
                                    tableOutput("tabla_pensiones_reformaABC")
                    ),
                    column(6,
-                          sliderInput("anios_calculo_pension", "Seleccione el número de años considerados para el cálculo de la pensión (años):", value = 15, max = 30, min = 5),
-                          highchartOutput("evolucion_reservas_con_aporte_sin_reforma", height = "300px"),
+                          #highchartOutput("evolucion_reservas_con_aporte_sin_reforma", height = "300px"),
                           highchartOutput("evolucion_reservas_con_aporte_con_reforma", height = "300px"),
                    )
                    )
