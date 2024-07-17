@@ -11,7 +11,7 @@ suppressMessages(suppressWarnings(library(highcharter)))
 suppressMessages(suppressWarnings(library(DT)))
 suppressMessages(suppressWarnings(library(kableExtra)))
 suppressMessages(suppressWarnings(library(ggplot2)))
-suppressMessages(suppressWarnings(library(scales)))
+suppressMessages(suppressWarnings(library(reactable)))
 
 options(scipen = 999)
 
@@ -83,9 +83,7 @@ server <- function(input, output, session) {
     ultimo_sueldo <- salario * (1+incremento)^(anios_aporte - 1)
     
     tasa <- (pension / ultimo_sueldo) * 100
-    if(tasa >= 100){
-      tasa <- 100
-    }
+    
     return(tasa)
   }
   
@@ -294,11 +292,12 @@ server <- function(input, output, session) {
       color = "purple", fill = TRUE
     )
   })
-  output$Naportes <- renderValueBox({
-    x <- (input$edad_jubilacion - input$edad_inicio)
+  output$pension_teorica_actual <- renderValueBox({
+    x <- round(PensionActual(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
+    x <- format(x, big.mark = ",", decimal.mark = ".", nsmall=2)
     shinydashboard::infoBox( 
-      value = div(style = "color: white", paste(x, "años")), 
-      title = "Aportó", icon = icon(name = "calendar-days", class = "fa-solid fa-calendar-days"),
+      value = div(style = "color: white", paste0("$", x)), 
+      title = "Pensión Teórica Actual", icon = icon(name = "calculator", class = "fa-solid fa-calculator"),
       color = "blue", fill = TRUE
     )
   })
@@ -310,14 +309,7 @@ server <- function(input, output, session) {
       color = "aqua", fill = TRUE
     )
   })
-  output$cobertura <- renderValueBox({
-    x <- round(((calcularVApensionesTotal()[[1]]- calcularAhorroTotal())/calcularVApensionesTotal()[[1]])*100,1)
-    shinydashboard::infoBox( 
-      value = div(style = "color: white", paste(x,"%")), 
-      title = "Aporte del Estado", icon = icon(name = "landmark", class = "fa-solid fa-landmark"),
-      color = "teal", fill = TRUE
-    )
-  })
+  
   
   output$VApension <- renderValueBox({
     x <- round(calcularVApensionesTotal()[[1]],2)
@@ -338,25 +330,18 @@ server <- function(input, output, session) {
       color = "blue", fill = TRUE
     )
   })
-  output$pension_teorica_actual <- renderValueBox({
-    x <- round(PensionActual(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
-    x <- format(x, big.mark = ",", decimal.mark = ".", nsmall=2)
+  output$cobertura <- renderValueBox({
+    x <- round(((calcularVApensionesTotal()[[1]]- calcularAhorroTotal())/calcularVApensionesTotal()[[1]])*100,1)
+    if(x < 0){
+      x <- 0
+    }
     shinydashboard::infoBox( 
-      value = div(style = "color: white", paste0("$", x)), 
-      title = "Pensión Teórica Actual", icon = icon(name = "calculator", class = "fa-solid fa-calculator"),
+      value = div(style = "color: white", paste(x,"%")), 
+      title = "Aporte del Estado", icon = icon(name = "landmark", class = "fa-solid fa-landmark"),
       color = "aqua", fill = TRUE
     )
   })
-  output$pension_teorica_jub <- renderValueBox({
-    x <- round(Pension(input$edad_inicio, input$salario , (input$edad_jubilacion - input$edad_inicio))[[1]], 2)
-    x <- format(x, big.mark = ",", decimal.mark = ".", nsmall=2)
-    shinydashboard::infoBox( 
-      value = div(style = "color: white", paste0("$", x)), 
-      title = div(style = "white-space: normal; word-wrap: break-word; line-height: 1.2;", "Pensión Teoríca a la Jubilación"),
-      icon = icon(name = "money-bill-trend-up", class = "fa-solid fa-money-bill-trend-up"),
-      color = "teal", fill = TRUE
-    )
-  })
+  
   
   # Evolucion de la reserva del individuo ----
   
@@ -366,7 +351,6 @@ server <- function(input, output, session) {
     edad_inicio <- input$edad_inicio
     edad_jubilacion <- input$edad_jubilacion
     salario_ini <- input$salario
-    
     
     crec_pensiones <- 1.8261/100; crec_pensiones_12 <- (1+crec_pensiones)^(1/12)-1
     
@@ -384,10 +368,10 @@ server <- function(input, output, session) {
     anio_muerte <- anio_fin+1 + (100-edad_jubilacion)
     num_anios_pension <- length(c((anio_fin+1):anio_muerte))
     
-
+    
     i_actuarial <- input$interes /100 # 6.2500 /100 #tasa actuarial
     i_12 <- (1+i_actuarial)^(1/12) - 1
-
+    
     
     # Crecimiento de la reserva ( cotizaciones ) -----------------------------------
     ev_res <- data.frame(
@@ -402,7 +386,7 @@ server <- function(input, output, session) {
     }else{
       incremento <- 0.02154
     }
-
+    
     for (j in c(1:num_anios)) {
       ev_res[j,3] <-  VSn(C = (salario_ini * IVM) * annuity(i = i_12, n=12, type = "immediate"),
                           q = (1+incremento) , 
@@ -412,7 +396,7 @@ server <- function(input, output, session) {
     }
     
     # Decrecimiento de la reserva ( pensiones ) -------------------------------------
-     
+    
     pen <- Pension(edad_inicio, salario_ini, num_anios)[[1]]
     ahorro_total_inicial <- ev_res[nrow(ev_res),3]
     
@@ -433,7 +417,7 @@ server <- function(input, output, session) {
     
     for (j in c(1:num_anios_pension)) {
       
-
+      
       if (sexo=="M") {
         if (j==1) {
           doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
@@ -535,7 +519,7 @@ server <- function(input, output, session) {
     pen <- Pension(edad_inicio, salario_ini, num_anios)[[1]]
     ahorro_total_inicial <- ev_res[nrow(ev_res),3]
     
-    # con el 40% del estado
+    # SIN el 40% del estado
     ev_res2 <- data.frame(
       anio = c((anio_fin+1):anio_muerte),
       edad = c(edad_jubilacion:100),
@@ -605,7 +589,7 @@ server <- function(input, output, session) {
     edad <- Evolucion_Reservas_con_aporte40()[[1]]
     reservas <- Evolucion_Reservas_con_aporte40()[[2]]
     
-    max_res <- which(reservas==max(reservas))
+    max_res <- (input$edad_jubilacion - input$edad_inicio)
     last_pos <- max(which(reservas > 0))
     first_neg <- min(which(reservas < 0))
     
@@ -704,6 +688,8 @@ server <- function(input, output, session) {
     anio_muerte <- anio_fin+1 + (100-edad_jubilacion)
     num_anios_pension <- length(c((anio_fin+1):anio_muerte))
     
+    colores <- c('#605CA8', '#0073B7')
+    
     highchart() %>%
       hc_chart(type = "pie") %>%
       hc_title(text = "Tiempo del Individuo en el Sistema de Seguridad Social") %>%
@@ -718,8 +704,8 @@ server <- function(input, output, session) {
         name = "Años",
         colorByPoint = TRUE,
         data = list(
-          list(name = "Cotizante", y = num_anios),
-          list(name = "Pensionista", y = num_anios_pension)
+          list(name = "Cotizante", y = num_anios, color = colores[1]),
+          list(name = "Pensionista", y = num_anios_pension, color = colores[2])
         )
       )) 
   })
@@ -730,6 +716,8 @@ server <- function(input, output, session) {
     vaa_prestacion <- round(calcularVApensionesTotal()[[1]],1)
     vaa_prestacion_estado <- vaa_prestacion*(porc_estado/100)
     vaa_prestacion_iess <- vaa_prestacion*(1-(porc_estado/100))
+    
+    colores <- c('#605CA8', '#0073B7')
     
     highchart() %>%
       hc_chart(type = "pie") %>%
@@ -745,51 +733,10 @@ server <- function(input, output, session) {
         name = "Dólares",
         colorByPoint = TRUE,
         data = list(
-          list(name = "Prestaciones Cubiertas por el IESS", y = vaa_prestacion_iess),
-          list(name = "Prestaciones Cubiertas por el Estado", y = vaa_prestacion_estado)
+          list(name = "Prestaciones Cubiertas por el IESS", y = vaa_prestacion_iess, color = colores[1]),
+          list(name = "Prestaciones Cubiertas por el Estado", y = vaa_prestacion_estado, color = colores[2])
         )
       )) 
-  })
-  # Comparacion ahorros vs prestaciones
-  output$ahorros_vs_prestaciones <- renderHighchart({
-    highchart() %>%
-      hc_chart(type = "column") %>%
-      hc_title(text = "Diferencia entre el ahorro y el valor total de las prestaciones del Individuo") %>%
-      hc_xAxis(categories = list('')) %>%
-      hc_yAxis(min = 0, title = list(text = "Dólares")) %>%
-      hc_tooltip(shared = TRUE, crosshairs = TRUE) %>%
-      hc_plotOptions(column = list(
-        pointPadding = 0.2,
-        borderWidth = 0
-      )) %>%
-      hc_series(list(
-        name = "Ahorros totales del Individuo",
-        data = list(round(calcularAhorroTotal(),1))
-      ), list(
-        name = "Valor Actual Actuarial de las prestaciones",
-        data = list(round(calcularVApensionesTotal()[[1]],1))
-      ))
-  })
-  # Comparacion pension promedio y pension del individuo
-  output$penprom_vs_penind <- renderHighchart({
-    highchart() %>%
-      hc_chart(type = "column") %>%
-      hc_title(text = "Comparación entre la Pensión del Individuo y la Pensión Promedio") %>%
-      hc_subtitle(text = "Pnsión que obtendrá el Individuo, comparada con la pensión de in individuo de similares características.") %>% 
-      hc_xAxis(categories = list('')) %>%
-      hc_yAxis(min = 0, title = list(text = "Dólares")) %>%
-      hc_tooltip(shared = TRUE, crosshairs = TRUE) %>%
-      hc_plotOptions(column = list(
-        pointPadding = 0.2,
-        borderWidth = 0
-      )) %>%
-      hc_series(list(
-        name = "Pensión Promedio",
-        data = list( round(pension_promedio_fun(input$edad_jubilacion, (input$edad_jubilacion - input$edad_inicio)*12, input$sexo,  input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio)),1))
-      ), list(
-        name = "Pensión del Individuo",
-        data = list(round(Pension(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio))[[1]], 2))
-      ))
   })
   
   # TABLA -----------
@@ -954,7 +901,7 @@ server <- function(input, output, session) {
     return(list(edad, reservas))
   }
   
-  output$tabla_pensiones <- function() {
+  output$tabla_pensiones <- renderReactable({
     # Creación de las columnas
     edad_jubilacion <- seq(input$edad_jubilacion, input$edad_jubilacion + 10)
     anos_aportacion <- edad_jubilacion - input$edad_inicio
@@ -1002,37 +949,47 @@ server <- function(input, output, session) {
     )
     
     colnames(tabla) <- c("Edad de Jubilación",
-                         'Años de aportación',
-                         'Fondo acumulado',
-                         'Pensión de jubilación anual',
-                         'Pensión de jubilación mensual',
-                         'Último año con reserva positiva con aporte del estado',
-                         'Último año con reserva positiva sin aporte del estado',
-                         'Tasa de Reemplazo')
+                         "Años de aportación",
+                         "Fondo acumulado",
+                         "Pensión de jubilación anual",
+                         "Pensión de jubilación mensual",
+                         "Último año con reserva positiva con aporte del estado",
+                         "Último año con reserva positiva sin aporte del estado",
+                         "Tasa de Reemplazo")
     
+    # Convertir la tasa de reemplazo en una barra de progreso
     tabla$`Tasa de Reemplazo` <- sapply(tabla$`Tasa de Reemplazo`, function(x) {
       percent <- as.numeric(x) / 100
+      formatted_percent <- sprintf("%.2f", x)
       bar <- paste0('<div style="background-color: #f2f2f2; border-radius: 5px; width: 100px; display: inline-block;">',
                     '<div style="background-color: #4CAF50; width: ', percent * 100, '%; height: 15px; border-radius: 5px;"></div>',
-                    '</div> ', x, '%')
+                    '</div> ', formatted_percent, '%')
       bar
     })
     
-    # Generación de la tabla con kableExtra 
-    kbl(tabla, escape = FALSE) %>%
-      kable_styling(bootstrap_options = c("hover", "responsive"), position = "center") %>%
-      row_spec(0, bold = TRUE, color = "white", background = "#005C92", font_size = 10, align = "c") %>%
-      column_spec(1, width = "60px") %>%
-      column_spec(2, width = "60px") %>%
-      column_spec(3, color = "green", width = "120px") %>%
-      column_spec(4, color = "blue", width = "120px") %>%
-      column_spec(5, color = "blue", width = "120px") %>% 
-      column_spec(6, width = "120px") %>% 
-      column_spec(7, width = "120px") %>% 
-      column_spec(8, width = "120px") %>% 
-      scroll_box(width = "100%")
-  }
-  
+    # Creación de la tabla con reactable
+    reactable(
+      tabla,
+      columns = list(
+        `Edad de Jubilación` = colDef(align = "center"),
+        `Años de aportación` = colDef(align = "center"),
+        `Fondo acumulado` = colDef(align = "center", style = list(color = "green", fontWeight = "bold")),
+        `Pensión de jubilación anual` = colDef(align = "center"),
+        `Pensión de jubilación mensual` = colDef(align = "center", style = list(color = "#110C87", fontWeight = "bold")),
+        `Último año con reserva positiva con aporte del estado` = colDef(align = "center"),
+        `Último año con reserva positiva sin aporte del estado` = colDef(align = "center"),
+        `Tasa de Reemplazo` = colDef(html = TRUE, align = "center", minWidth = 110, headerStyle = list(textAlign = "center"))
+      ),
+      bordered = TRUE,
+      striped = TRUE,
+      highlight = TRUE,
+      defaultPageSize = 6,
+      theme = reactableTheme(
+        headerStyle = list(backgroundColor = "#0073B7", color = "white", fontWeight = "bold"),
+        borderColor = "#d9d9d9"
+      )
+    )
+  })
   
   # REFORMA ANDREA ---- 
   Pension_reforma <- function(edad, salario, anios_aporte, anios_prom){
@@ -1100,20 +1057,12 @@ server <- function(input, output, session) {
   }
   TasaReemplazo_reforma <- function(edad, salario, anios_aporte, anios_prom){
     
-    if(salario < sbu$sbu[sbu$anio==input$anio_inicio]){
-      salario <- sbu$sbu[sbu$anio==input$anio_inicio]
-      incremento <-2.5339/100
-    }else{
-      incremento <- 0.02154
-    }
+    incremento <- 0.025339
     
     pension <- Pension_reforma(edad, salario, anios_aporte, anios_prom)[[1]]
     ultimo_sueldo <- salario * (1+incremento)^(anios_aporte - 1)
     
     tasa <- (pension / ultimo_sueldo) * 100
-    if(tasa >= 100){
-      tasa <- 100
-    }
     return(tasa)
   }
   VApensionesTotal_reforma <- function(sexo, edad_inicio, edad_jubilacion, anio_inicio, inflacion, interes, salario, anios_prom){
@@ -1209,30 +1158,56 @@ server <- function(input, output, session) {
       )
       
       x=edad_jubilacion
-      m=12
+      m = 12
+      i = crec_pensiones
       #i = crec_pensiones
       sbu_anio_jub <- 460*(1+crec_SBU)^(anio_fin-2024+1)
       ahorro_total_inicial
       
       for (j in c(1:num_anios_pension)) {
-        if (j==1) {
-          doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
-          dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
-          dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TH,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
-          
-          ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
-          ev_res2[j,"res_acum"]   <- ahorro_total_inicial*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6 # Falta capitalizar el ahorro alcanzado
+        
+        
+        if (sexo=="M") {
+          if (j==1) {
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TH,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ahorro_total_inicial*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6 # Falta capitalizar el ahorro alcanzado
+            #PROFE: Aqui no entiendo por que le capitaliza, si ese valor de ahorro_total_inicial ya esta al final del ultimo, y estos gastos estan evaluados al principio de la edad de jubilacion
+          }else{
+            
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TH,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ev_res2[j-1,"res_acum"]*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6
+          }
         }else{
-          doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
-          dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
-          dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TH,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
-          
-          ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
-          ev_res2[j,"res_acum"]   <- ev_res2[j-1,"res_acum"]*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6 
+          if (j==1) {
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TM, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TM,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TM,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ahorro_total_inicial*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6 # Falta capitalizar el ahorro alcanzado
+            #PROFE: Aqui no entiendo por que le capitaliza, si ese valor de ahorro_total_inicial ya esta al final del ultimo, y estos gastos estan evaluados al principio de la edad de jubilacion
+          }else{
+            
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TM, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TM,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TM,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ev_res2[j-1,"res_acum"]*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6
+          }
           
         }
       }
     }else{
+      # SIN el 40% del estado
       ev_res2 <- data.frame(
         anio = c((anio_fin+1):anio_muerte),
         edad = c(edad_jubilacion:100),
@@ -1243,26 +1218,49 @@ server <- function(input, output, session) {
       x=edad_jubilacion
       m = 12
       i = crec_pensiones
+      #i = crec_pensiones
       sbu_anio_jub <- 460*(1+crec_SBU)^(anio_fin-2024+1)
       ahorro_total_inicial
       
       for (j in c(1:num_anios_pension)) {
         
-        if (j==1) {
-          doce_pen <- pen*12*axn_m(TH,x,1,m,i,payment="immediate")
-          dec_ter <- pen*axn(TH,x = x,n = 1,i = i,payment = "immediate")
-          dec_cua <- sbu_anio_jub*axn(TH,x = x,n = 1,i = crec_SBU,payment = "immediate")
-          
-          ev_res2[j,"gasto_anio"] <- doce_pen + dec_ter + dec_cua 
-          ev_res2[j,"res_acum"]   <- ahorro_total_inicial - ev_res2[j,"gasto_anio"]
+        
+        if (sexo=="M") {
+          if (j==1) {
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TH,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ahorro_total_inicial*(1+i_actuarial) - ev_res2[j,"gasto_anio"] # Falta capitalizar el ahorro alcanzado
+            #PROFE: Aqui no entiendo por que le capitaliza, si ese valor de ahorro_total_inicial ya esta al final del ultimo, y estos gastos estan evaluados al principio de la edad de jubilacion
+          }else{
+            
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TH,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ev_res2[j-1,"res_acum"]*(1+i_actuarial) - ev_res2[j,"gasto_anio"]
+          }
         }else{
-          
-          doce_pen <- pen*12*axn_m(TH,x+j-1,1,m,i,payment="immediate")*Exn(TH,x = x,n = j-1,i = i) #fraccionada diferida
-          dec_ter <- pen*axn(TH,x = x,n = 1,i = i,m = j-1, payment = "immediate") #diferida
-          dec_cua <- sbu_anio_jub*axn(TH,x = x,n = 1,i = crec_SBU,m = j-1, payment = "immediate") #diferida
-          
-          ev_res2[j,"gasto_anio"] <- doce_pen + dec_ter + dec_cua 
-          ev_res2[j,"res_acum"]   <- ev_res2[j-1,"res_acum"] - ev_res2[j,"gasto_anio"]
+          if (j==1) {
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TM, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TM,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TM,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ahorro_total_inicial*(1+i_actuarial) - ev_res2[j,"gasto_anio"] # Falta capitalizar el ahorro alcanzado
+            #PROFE: Aqui no entiendo por que le capitaliza, si ese valor de ahorro_total_inicial ya esta al final del ultimo, y estos gastos estan evaluados al principio de la edad de jubilacion
+          }else{
+            
+            doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TM, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
+            dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TM,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
+            dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TM,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
+            
+            ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
+            ev_res2[j,"res_acum"]   <- ev_res2[j-1,"res_acum"]*(1+i_actuarial) - ev_res2[j,"gasto_anio"]
+          }
           
         }
       }
@@ -1282,6 +1280,19 @@ server <- function(input, output, session) {
       color = "purple", fill = TRUE
     )
   })
+  output$cobertura_reforma <- renderValueBox({
+    VAApensiones <- VApensionesTotal_reforma(input$sexo, input$edad_inicio, input$edad_jubilacion, input$anio_inicio,
+                                             input$inflacion, input$interes, input$salario, input$anios_calculo_pension)[[1]]
+    x <- round(((VAApensiones - calcularAhorroTotal())/VAApensiones)*100,1)
+    if(x < 0){
+      x <- 0
+    }
+    shinydashboard::infoBox( 
+      value = div(style = "color: white", paste(x,"%")), 
+      title = "Aporte del Estado", icon = icon(name = "landmark", class = "fa-solid fa-landmark"),
+      color = "blue", fill = TRUE
+    )
+  })
   output$pension_teorica_actual_reforma <- renderValueBox({
     x <- round(PensionActual_reforma(input$edad_inicio, input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), (input$edad_jubilacion - input$edad_inicio), input$anios_calculo_pension)[[1]], 2)
     x <- format(x, big.mark = ",", decimal.mark = ".", nsmall=2)
@@ -1289,7 +1300,7 @@ server <- function(input, output, session) {
       value = div(style = "color: white", paste0("$", x)), 
       title = div(style = "white-space: normal; word-wrap: break-word; line-height: 1.2;", "Pensión Teoríca Actual"),
       icon = icon(name = "calculator", class = "fa-solid fa-calculator"),
-      color = "blue", fill = TRUE
+      color = "aqua", fill = TRUE
     )
   })
   output$pension_teorica_jub_reforma <- renderValueBox({
@@ -1313,95 +1324,7 @@ server <- function(input, output, session) {
     )
   })
   
-  output$tabla_pensiones_reformaABC <- function(){
-    # Creación de las columnas
-    anio <- seq(2024, 2049)
-    anios_prom <- seq(5,30)
-    pension <- sapply(anios_prom, function(n) {
-      Pension_reforma(input$edad_inicio, 
-                      input$salario,
-                      (input$edad_jubilacion - input$edad_inicio), 
-                      n
-      )[[1]]
-    })
-    
-    ultimo_anio_reserva_con_aporte <- sapply(anios_prom, function(num) {
-      input$edad_inicio + max(which(Evolucion_Reservas_fun_reforma(input$sexo, input$edad_inicio,
-                                                                   input$edad_jubilacion, input$salario,
-                                                                   input$anio_inicio, input$interes,
-                                                                   num, aporte = TRUE)[[2]] > 0))-2
-      
-    })
-    ultimo_anio_reserva_sin_aporte <- sapply(anios_prom, function(num) {
-      input$edad_inicio + max(which(Evolucion_Reservas_fun_reforma(input$sexo, input$edad_inicio,
-                                                                   input$edad_jubilacion, input$salario,
-                                                                   input$anio_inicio, input$interes, num,
-                                                                   aporte = FALSE)[[2]] > 0))-2
-      
-    })
-    
-    # Creación de la tabla final
-    tabla <- data.frame(
-      `Año de aplicación` = anio,
-      `Años para el promedio` = anios_prom,
-      `Pensión de jubilación mensual` = round(pension, 2),
-      `Último año con reserva positiva con aporte del estado` = ultimo_anio_reserva_con_aporte,
-      `Último año con reserva positiva sin aporte del estado` = ultimo_anio_reserva_sin_aporte
-    )
-    
-    colnames(tabla) <- c("Año de Aplicación",
-                         'Años considerados para el cálculo',
-                         'Pensión de jubilación mensual',
-                         'Último año con reserva positiva con aporte del estado',
-                         'Último año con reserva positiva sin aporte del estado'
-    )
-    
-    # Generación de la tabla con kableExtra
-    kbl(tabla) %>%
-      kable_styling(bootstrap_options = "hover", position = "center", full_width = F) %>%
-      row_spec(0, bold = F, color = "white", background = "#005C92", font_size = 10) #%>%
-    #scroll_box(height = "600px")
-    
-  }
-  output$evolucion_reservas_con_aporte_sin_reforma <- renderHighchart({
-    
-    edad <- Evolucion_Reservas_con_aporte40()[[1]]
-    reservas <- Evolucion_Reservas_con_aporte40()[[2]]
-    
-    max_res <- which(reservas==max(reservas))
-    last_pos <- max(which(reservas > 0))
-    first_neg <- min(which(reservas < 0))
-    
-    highchart() %>%
-      hc_chart(type = "area") %>%
-      hc_title(text = "Evolución de Reservas por Edad") %>%
-      hc_subtitle(text = paste("con el aporte del 40% del Estado en cada pensión y considerando los 5 mejores años de aporte")) %>%
-      hc_xAxis(categories = edad, title = list(text = "Edad")) %>%
-      hc_yAxis(title = list(text = "Reservas")) %>%
-      hc_tooltip(shared = TRUE, valueDecimals = 0) %>%
-      hc_plotOptions(area = list(
-        marker = list(enabled = FALSE),
-        enableMouseTracking = TRUE
-      )) %>%
-      hc_add_series(
-        name = "Aportación",
-        data = reservas[1:max_res],  # datos positivos hasta 150000
-        color = "blue",
-        fillOpacity = 0.3
-      ) %>%
-      hc_add_series(
-        name = "Jubilación",
-        data = c(rep(NA, max_res-1), reservas[max_res:last_pos]),  # datos decreciendo de 150000 a 0
-        color = "green",
-        fillOpacity = 0.3
-      ) %>%
-      hc_add_series(
-        name = "Jubilación -",
-        data = c(rep(NA, last_pos-1), reservas[(last_pos):length(reservas)]),  # datos decreciendo de 0 a -150000
-        color = "red",
-        fillOpacity=0.3
-      ) %>% hc_add_theme(hc_theme_elementary())
-  })
+  
   output$evolucion_reservas_con_aporte_con_reforma <- renderHighchart({
     edad <- Evolucion_Reservas_fun_reforma(input$sexo, input$edad_inicio,
                                            input$edad_jubilacion, input$salario,
@@ -1446,17 +1369,118 @@ server <- function(input, output, session) {
         fillOpacity=0.3
       ) %>% hc_add_theme(hc_theme_elementary())
   })
+  output$pension_vs_años_con_reforma <- renderHighchart({
+    anio_aplicacion <- seq(2024, 2049)
+    anios_considerados <- seq(5,30)
+    pension_mensual <- sapply(anios_considerados, function(n) {
+      round(PensionActual_reforma(input$edad_inicio, 
+                                  input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), 
+                                  (input$edad_jubilacion - input$edad_inicio), 
+                                  n)[[1]], 2)
+    })
+    
+    tabla <- data.frame(
+      `Año de Aplicación` = anio_aplicacion,
+      `Años considerados para el cálculo` = anios_considerados,
+      `Pensión de jubilación mensual` = pension_mensual
+    )
+    
+    # Crear el gráfico de Highcharts
+    highchart() %>%
+      hc_chart(type = "line") %>%
+      hc_title(text = "Pensión de Jubilación Mensual por Año de Aplicación") %>%
+      hc_xAxis(categories = anio_aplicacion, title = list(text = "Año de Aplicación")) %>%
+      hc_yAxis(title = list(text = "Pensión de Jubilación Mensual")) %>%
+      hc_add_series(name = "Pensión Mensual", data = pension_mensual, color = "#8D58E5") %>%
+      hc_tooltip(pointFormat = "Pensión: {point.y:.2f}") %>% 
+      hc_legend(enabled = FALSE) 
+    
+  })
   
-  # REFORMA AMMY PARRAGA -------------------------------------------------------
-  
-  
-  
-  
-  
+  output$tabla_pensiones_reformaABC <- renderReactable({
+    # Creación de las columnas
+    anio <- seq(2024, 2049)
+    anios_prom <- seq(5,30)
+    pension_mensual <- sapply(anios_prom, function(n) {
+      round(PensionActual_reforma(input$edad_inicio, 
+                                  input$salario *(1+ 0.02154)^(-input$anio_inicio + (2024 - (input$edad_jubilacion - input$edad_inicio))), 
+                                  (input$edad_jubilacion - input$edad_inicio), 
+                                  n)[[1]], 2)
+    })
+    pension_mensual <- format(pension_mensual, big.mark = ",", decimal.mark = ".", nsmall = 2)
+    pension_mensual <- paste("USD", pension_mensual)
+    
+    ultimo_anio_reserva_con_aporte <- sapply(anios_prom, function(num) {
+      input$edad_inicio + max(which(Evolucion_Reservas_fun_reforma(input$sexo, input$edad_inicio,
+                                                                   input$edad_jubilacion, input$salario,
+                                                                   input$anio_inicio, input$interes,
+                                                                   num, aporte = TRUE)[[2]] > 0))-2
+      
+    })
+    ultimo_anio_reserva_sin_aporte <- sapply(anios_prom, function(num) {
+      input$edad_inicio + max(which(Evolucion_Reservas_fun_reforma(input$sexo, input$edad_inicio,
+                                                                   input$edad_jubilacion, input$salario,
+                                                                   input$anio_inicio, input$interes, num,
+                                                                   aporte = FALSE)[[2]] > 0))-2
+      
+    })
+    
+    tasa_reemplazo <- sapply(anios_prom, function(num) {
+      round(TasaReemplazo_reforma(input$edad_inicio, input$salario, (input$edad_jubilacion - input$edad_inicio), num), 2)
+    })
+    
+    # Creación de la tabla final
+    tabla <- data.frame(
+      `Año de Aplicación` = anio,
+      `Años considerados para el cálculo` = anios_prom,
+      `Pensión de jubilación mensual` = pension_mensual,
+      `Último año con reserva positiva con aporte del estado` = ultimo_anio_reserva_con_aporte,
+      `Último año con reserva positiva sin aporte del estado` = ultimo_anio_reserva_sin_aporte,
+      `Tasa de Reemplazo` = tasa_reemplazo
+    )
+    
+    colnames(tabla) <- c("Año de Aplicación",
+                         'Años considerados para el cálculo',
+                         'Pensión de jubilación mensual',
+                         'Último año con reserva positiva con aporte del estado',
+                         'Último año con reserva positiva sin aporte del estado',
+                         'Tasa de Reemplazo'
+    )
+    
+    # Convertir la tasa de reemplazo en una barra de progreso
+    tabla$`Tasa de Reemplazo` <- sapply(tabla$`Tasa de Reemplazo`, function(x) {
+      percent <- as.numeric(x) / 100
+      formatted_percent <- sprintf("%.2f", x)
+      bar <- paste0('<div style="background-color: #f2f2f2; border-radius: 5px; width: 100px; display: inline-block;">',
+                    '<div style="background-color: #4CAF50; width: ', percent * 100, '%; height: 15px; border-radius: 5px;"></div>',
+                    '</div> ', formatted_percent, '%')
+      bar
+    })
+    
+    # Creación de la tabla con reactable
+    reactable(
+      tabla,
+      columns = list(
+        `Año de Aplicación` = colDef(align = "center"),
+        `Años considerados para el cálculo` = colDef(align = "center"),
+        `Pensión de jubilación mensual` = colDef(align = "center", style = list(color = "green", fontWeight = "bold")),
+        `Último año con reserva positiva con aporte del estado` = colDef(align = "center"),
+        `Último año con reserva positiva sin aporte del estado` = colDef(align = "center"),
+        `Tasa de Reemplazo` = colDef(html = TRUE, align = "center", minWidth = 110, headerStyle = list(textAlign = "center"))
+      ),
+      bordered = TRUE,
+      striped = TRUE,
+      highlight = TRUE,
+      defaultPageSize = 6,
+      theme = reactableTheme(
+        headerStyle = list(backgroundColor = "#0073B7", color = "white", fontWeight = "bold"),
+        borderColor = "#d9d9d9"
+      )
+    )
+  })
   
   
 }
-
 
 
 
