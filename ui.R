@@ -166,26 +166,39 @@ ui <- fluidPage(
                        p(""),
                        h5(HTML(" Analicemos la Evolución de las reservas del individuo:")),
                        p(""),
-                       fluidRow(column(6,
-                                       highchartOutput("evolucion_reservas_con_aporte_sin_decimos", height = "300px")
-                                ),
-                                column(6,
-                                       highchartOutput("evolucion_reservas_con_aporte_con_decimos", height = "300px")
-                                )
-                      ),
+                      #  fluidRow(column(6,
+                      #                  highchartOutput("evolucion_reservas_con_aporte_sin_decimos", height = "300px")
+                      #           ),
+                      #           column(6,
+                      #                  highchartOutput("evolucion_reservas_con_aporte_con_decimos", height = "300px")
+                      #           )
+                      # ),
+                      # fluidRow(column(6,
+                      #                 highchartOutput("evolucion_reservas_sin_aporte_sin_decimos", height = "300px")
+                      #           ),
+                      #           column(6,
+                      #                 highchartOutput("evolucion_reservas_sin_aporte_con_decimos", height = "300px")
+                      #           )
+                      # ),
                       fluidRow(column(6,
-                                      highchartOutput("evolucion_reservas_sin_aporte_sin_decimos", height = "300px")
-                                ),
-                                column(6,
-                                      highchartOutput("evolucion_reservas_sin_aporte_con_decimos", height = "300px")
-                                )
+                                      highchartOutput("evolucion_reservas_con_y_sin_aporte_sin_decimos", height = "500px",width = "400px")),
+                               column(6,
+                                      highchartOutput("evolucion_reservas_con_y_sin_aporte_con_decimos", height = "500px",width = "400px"))
+                               ),
+                      fluidRow(column(6,
+                                      highchartOutput("deficit_porcentaje_01", height = "300px")),
+                               column(6,
+                                      highchartOutput("porc_cobertura_01",height = "300px"))),
+                      fluidRow(
+                        reactableOutput("tabla_pensiones_01")
                       )
                      ),
                      tabPanel(
                        tags$strong("Escenario Alternativo: Mayor Ahorro y Propuesta de Nueva Pensión"),
                        textOutput("pen1"),
                        textOutput("pen2"),
-                       textOutput("pen3")
+                       textOutput("pen3"),
+                       textOutput("pen4")
                      )
                      
                    )
