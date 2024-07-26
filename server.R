@@ -532,8 +532,6 @@ server <- function(input, output, session) {
     ahorro_total_inicial
     
     for (j in c(1:num_anios_pension)) {
-      
-      
       if (sexo=="M") {
         if (j==1) {
           doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
