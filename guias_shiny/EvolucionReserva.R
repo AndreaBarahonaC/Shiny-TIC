@@ -9,11 +9,12 @@ library(data.table)
 # Tasas ########################################################################
 crec_pensiones <- 1.8261/100; crec_pensiones_12 <- (1+crec_pensiones)^(1/12)-1
 i_actuarial <- 6.2500 /100 #tasa actuarial
+i_12 <- (1+i_actuarial)^(1/12) - 1
 crec_SBU <- 2.5339/100; crec_SBU_12 <- (1+crec_SBU)^(1/12)-1 #superiodal
 IVM <- 11.06/100
 # Parámetros para el ejemplo ###################################################
 edad_inicio <- 25
-edad_jubilacion <- 60
+edad_jubilacion <- 65
 salario_ini <- 600
 anio_inicio <- 2010
 anio_fin <- anio_inicio + (edad_jubilacion-edad_inicio-1)
@@ -111,15 +112,6 @@ Pension <- function(edad, salario, anios_aporte){
   
   return(list(pension, prom))
 }
-axn_m <- function(TH,x,n,m,i,payment="due"){# Prima de renta actuarial fraccionada pre o pospagable 
-  if(payment == "due"){
-    ax<- axn(TH,x=x,n=n,i=i,payment = "due")- ((m-1)/(2*m))*(1-Exn(TH,x=x,n=n,i=i))
-    return(ax)
-  } else {
-    ax <- axn(TH,x=x,n=n,i=i,payment = "due")- ((m+1)/(2*m))*(1-Exn(TH,x=x,n=n,i=i))
-    return(ax)
-  }
-}
 
 grafico_evolucion_reserva <- function(edad,reservas,con_o_sin){
   max_res <- which(reservas==max(reservas))
@@ -171,15 +163,29 @@ TM <- probs2lifetable(probs=probsM, radix=100000, type="qx", name = "Mortalidad 
 
 # Crecimiento de la reserva ( cotizaciones ) ###################################
 
+if(salario_ini < sbu$sbu[sbu$anio==anio_inicio]){
+  salario_ini <- sbu$sbu[sbu$anio==anio_inicio]
+  incremento <-2.5339/100
+}else{
+  incremento <- 0.02154
+}
+########### asdfghjhgfdafdgdhf
 ev_res <- data.frame(
   anio = c(anio_inicio:anio_fin),
   edad = c(edad_inicio:(edad_jubilacion-1)),
   res_acum = numeric(num_anios)
 )
 
-for (j in c(1:num_anios)) {
-  ev_res[j,3] <-  VSn(C = (salario_ini * IVM ) * annuity(i = crec_SBU_12, n=12, type = "immediate"),
-                      q = (1+crec_SBU) , 
+# for (j in c(1:num_anios)) { #antiguo
+#   ev_res[j,3] <-  VSn(C = (salario_ini * IVM ) * annuity(i = crec_SBU_12, n=12, type = "immediate"),
+#                       q = (1+crec_SBU) , 
+#                       n = j , #años de aporte hasta el momento
+#                       i = i_actuarial,
+#                       type = "due")
+# }
+for (j in c(1:num_anios)) { #nuevo
+  ev_res[j,3] <-  VSn(C = (salario_ini * IVM) * annuity(i = i_12, n=12, type = "immediate"),
+                      q = (1+incremento) , 
                       n = j , #años de aporte hasta el momento
                       i = i_actuarial,
                       type = "due")
@@ -210,32 +216,18 @@ ahorro_total_inicial
 for (j in c(1:num_anios_pension)) {
   
   if (j==1) {
-    # doce_pen <- pen*12*axn_m(TH,x,1,m,i,payment="immediate")
-    # dec_ter <- pen*axn(TH,x = x,n = 1,i = i,payment = "immediate")
-    # dec_cua <- sbu_anio_jub*axn(TH,x = x,n = 1,i = crec_SBU,payment = "immediate")
-    # 
-    # ev_res2[j,"gasto_anio"] <- doce_pen + dec_ter + dec_cua 
-    # ev_res2[j,"res_acum"]   <- ahorro_total_inicial - ev_res2[j,"gasto_anio"]*0.6 
+
     
     doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
     dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")
     dec_cua <- sbu_anio_jub*(1 + crec_SBU)^(j-1)*axn(TH,x = edad_jubilacion + j -1,n = 1,i = i_actuarial, payment = "immediate")
     
     ev_res2[j,"gasto_anio"] <- round(doce_pen + dec_ter + dec_cua, 2)
-    ev_res2[j,"res_acum"]   <- ahorro_total_inicial*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6 # Falta capitalizar el ahorro alcanzado
-    #PROFE: Aqui no entiendo por que le capitaliza, si ese valor de ahorro_total_inicial ya esta al final del ultimo, y estos gastos estan evaluados al principio de la edad de jubilacion
+    ev_res2[j,"res_acum"]   <- ahorro_total_inicial*(1+i_actuarial) - ev_res2[j,"gasto_anio"]*0.6
     
     
     
   }else{
-    
-    # doce_pen <- pen*12*axn_m(TH,x+j-1,1,m,i,payment="immediate")*Exn(TH,x = x,n = j-1,i = i) #fraccionada diferida
-    # dec_ter <- pen*axn(TH,x = x,n = 1,i = i,m = j-1, payment = "immediate") #diferida
-    # dec_cua <- sbu_anio_jub*axn(TH,x = x,n = 1,i = crec_SBU,m = j-1, payment = "immediate") #diferida
-    # 
-    # ev_res2[j,"gasto_anio"] <- doce_pen + dec_ter + dec_cua 
-    # ev_res2[j,"res_acum"]   <- ev_res2[j-1,"res_acum"] - ev_res2[j,"gasto_anio"]*0.6 
-    
     
     doce_pen <- pen*(1 + crec_pensiones)^(j-1)*12*axn(TH, x = edad_jubilacion + j -1, n=1, k=12, i = i_actuarial, payment = "immediate")
     dec_ter <- pen*(1 + crec_pensiones)^(j-1)*axn(TH,x = edad_jubilacion + j -1, n = 1, i = i_actuarial, payment = "immediate")

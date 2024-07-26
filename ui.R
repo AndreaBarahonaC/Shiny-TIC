@@ -14,6 +14,7 @@ suppressMessages(suppressWarnings(library(kableExtra)))
 suppressMessages(suppressWarnings(library(ggplot2)))
 suppressMessages(suppressWarnings(library(scales)))
 suppressMessages(suppressWarnings(library(reactable)))
+suppressMessages(suppressWarnings(library(shinyvalidate)))
 
 
 # cerulean, cosmo, cyborg, darkly, flatly, journal, 
@@ -128,8 +129,80 @@ ui <- fluidPage(
                tabPanel(
                  "Análisis Ammy Párraga",
                  fluidPage(
-                   h3("Explicación Ley"),
-                   p("Aquí puedes agregar más funcionalidades o información adicional.")
+                   h4("Reforma: Cotización sobre el décimo tercer y cuarto sueldo."),
+                   p("El Artículo 182.- Recursos del Seguro de Pensiones, del Anteproyecto de Ley para la Reforma
+                     al Sistema de Pensiones, establece que la aportación obligatoria que corresponde al afiliado
+                     con relación de dependencia, equivale al 11.06% sobre su remuneración imponible, y esta aportación
+                     obligatoria deberá hacerse también sobre el décimo tercer y el décimo cuarto sueldo.
+                     Además, El Seguro General de Pensiones, contará con la contribución financiera obligatoria del 40% para
+                     el pago de pensiones."),
+                   p(""),
+                   fluidRow(
+                     column(6,
+                            highchartOutput("comparación_ahorro_total", height = "300px",width = "400px")
+                            ),
+                     column(6,
+                            highchartOutput("num_coti_chart", height = "300px",width = "400px"))
+                   ),
+                   tabsetPanel(
+                     tabPanel(
+                       tags$strong("Escenario Real: Mayor Ahorro y Misma Pensión"),
+                       p(""),
+                       p(HTML("Actualmente, el valor de la pensión depende únicamente
+                              del número de años aportados y del promedio de los cinco
+                              mejores años de sueldos o salarios sobre los cuales se
+                              realizaron aportes. Por lo tanto, el valor de la pensión
+                              seguirá siendo igual al que recibiría el individuo antes
+                              de las reformas. <strong>Sin embargo, se observarán cambios en
+                              el ahorro, en el tiempo que le tome al ahorro total
+                              agotarse (si llegara a hacerlo), y en el aporte del
+                              Estado Ecuatoriano a las pensiones del individuo.</strong>")),
+                       p(""),
+                       fluidRow(infoBoxOutput("VApension_01", width = 3),  
+                                infoBoxOutput("pension_teorica_actual_01", width = 3),
+                                infoBoxOutput("tasa_reemplazo_01", width = 3),
+                                infoBoxOutput('cobertura_01', width = 3)
+                       ),
+                       p(""),
+                       h5(HTML(" Analicemos la Evolución de las reservas del individuo:")),
+                       p(""),
+                      #  fluidRow(column(6,
+                      #                  highchartOutput("evolucion_reservas_con_aporte_sin_decimos", height = "300px")
+                      #           ),
+                      #           column(6,
+                      #                  highchartOutput("evolucion_reservas_con_aporte_con_decimos", height = "300px")
+                      #           )
+                      # ),
+                      # fluidRow(column(6,
+                      #                 highchartOutput("evolucion_reservas_sin_aporte_sin_decimos", height = "300px")
+                      #           ),
+                      #           column(6,
+                      #                 highchartOutput("evolucion_reservas_sin_aporte_con_decimos", height = "300px")
+                      #           )
+                      # ),
+                      fluidRow(column(6,
+                                      highchartOutput("evolucion_reservas_con_y_sin_aporte_sin_decimos", height = "500px",width = "400px")),
+                               column(6,
+                                      highchartOutput("evolucion_reservas_con_y_sin_aporte_con_decimos", height = "500px",width = "400px"))
+                               ),
+                      fluidRow(column(6,
+                                      highchartOutput("deficit_porcentaje_01", height = "300px")),
+                               column(6,
+                                      highchartOutput("porc_cobertura_01",height = "300px"))),
+                      fluidRow(
+                        reactableOutput("tabla_pensiones_01")
+                      )
+                     ),
+                     tabPanel(
+                       tags$strong("Escenario Alternativo: Mayor Ahorro y Propuesta de Nueva Pensión"),
+                       textOutput("pen1"),
+                       textOutput("pen2"),
+                       textOutput("pen3"),
+                       textOutput("pen4")
+                     )
+                     
+                   )
+                   
                  )
                )
              )
